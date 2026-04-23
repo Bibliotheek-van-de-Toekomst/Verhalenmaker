@@ -14,6 +14,7 @@ import { BibKlaarScherm } from "./BibKlaarScherm";
 import { ModelSelector, type BeschikbaarModel } from "./ModelSelector";
 import { BibMedaille } from "./BibMedaille";
 import { BADGES, berekenBadgeIds, type BadgeId } from "@/lib/badges";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 
 const LS_KEY_BIB = "verhaalmaker.bib.v1";
 const LS_KEY_MODEL = "verhaalmaker.model.v1";
@@ -104,6 +105,12 @@ export function VerhaalMaker({
     () => new Set(),
   );
   const [nieuweBadge, setNieuweBadge] = React.useState<BadgeId | null>(null);
+
+  const isMobile = useMediaQuery("(max-width: 767px)");
+  const isCompact = useMediaQuery("(max-width: 1023px)");
+  const [mobielTab, setMobielTab] = React.useState<"coach" | "werkvlak">(
+    "werkvlak",
+  );
 
   const stappen = BIB_STAPPEN.slice(0, stepCount);
 
@@ -254,6 +261,9 @@ export function VerhaalMaker({
   const verstuur = async (extraContext?: string, retryVraag?: string) => {
     const vraag = retryVraag || input;
     if (!vraag.trim() || bezig) return;
+    if (isMobile && mobielTab !== "coach") {
+      setMobielTab("coach");
+    }
     if (!retryVraag) {
       setBerichten((b) => [
         ...b,
@@ -404,7 +414,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
         fontSize: 14,
         lineHeight: 1.5,
         display: "grid",
-        gridTemplateRows: "auto auto 1fr",
+        gridTemplateRows: isMobile ? "auto auto auto 1fr" : "auto auto 1fr",
         overflow: "hidden",
         position: "relative",
       }}
@@ -619,31 +629,31 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
       <div
         style={{
           background: BIB.antraciet,
-          padding: "10px 24px",
+          padding: isMobile ? "8px 12px" : "10px 24px",
           display: "flex",
           alignItems: "center",
-          gap: 24,
+          gap: isMobile ? 10 : 24,
         }}
       >
         <div
           style={{
             background: BIB.wit,
-            padding: "6px 12px",
+            padding: isMobile ? "4px 8px" : "6px 12px",
             borderRadius: 2,
           }}
         >
-          <BibLogo subnaam={subnaam} height={44} />
+          <BibLogo subnaam={subnaam} height={isMobile ? 28 : 44} />
         </div>
-        <PijlerRij actief={["Lees", "Doe"]} klein />
+        {!isCompact && <PijlerRij actief={["Lees", "Doe"]} klein />}
         <div
           style={{
             marginLeft: "auto",
             display: "flex",
             alignItems: "center",
-            gap: 12,
+            gap: isMobile ? 8 : 12,
           }}
         >
-          <BibAutoSaveDot lastSave={lastSave} />
+          {!isMobile && <BibAutoSaveDot lastSave={lastSave} />}
           <ModelSelector
             modellen={modellen}
             huidigId={modelId}
@@ -657,23 +667,35 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
         style={{
           background: BIB.wit,
           borderBottom: `1px solid ${BIB.line}`,
-          padding: "16px 24px 14px",
+          padding: isMobile ? "10px 12px" : "16px 24px 14px",
           display: "flex",
           alignItems: "center",
-          gap: 28,
+          gap: isMobile ? 10 : 28,
+          flexWrap: isMobile ? "wrap" : "nowrap",
         }}
       >
-        <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 12 }}>
+        <div
+          style={{
+            flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: isMobile ? 8 : 12,
+          }}
+        >
           <img
             src="/verhaalmaker.svg"
             alt=""
-            style={{ width: 40, height: 40, display: "block" }}
+            style={{
+              width: isMobile ? 28 : 40,
+              height: isMobile ? 28 : 40,
+              display: "block",
+            }}
           />
           <div>
             <div
               style={{
                 fontFamily: BIB.kop,
-                fontSize: 26,
+                fontSize: isMobile ? 18 : 26,
                 fontWeight: 500,
                 color: BIB.antraciet,
                 letterSpacing: -0.2,
@@ -682,33 +704,39 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
             >
               Verhaalmaker
             </div>
-            <KrullUnder width={132} />
-            <div
-              style={{
-                fontSize: 11.5,
-                color: BIB.antracietSoft,
-                marginTop: 4,
-                fontFamily: BIB.tekst,
-              }}
-            >
-              Workshop creatief schrijven
-            </div>
+            {!isMobile && (
+              <>
+                <KrullUnder width={132} />
+                <div
+                  style={{
+                    fontSize: 11.5,
+                    color: BIB.antracietSoft,
+                    marginTop: 4,
+                    fontFamily: BIB.tekst,
+                  }}
+                >
+                  Workshop creatief schrijven
+                </div>
+              </>
+            )}
           </div>
         </div>
 
-        <div
-          style={{
-            width: 1,
-            alignSelf: "stretch",
-            background: BIB.line,
-            margin: "0 4px",
-          }}
-        />
+        {!isMobile && (
+          <div
+            style={{
+              width: 1,
+              alignSelf: "stretch",
+              background: BIB.line,
+              margin: "0 4px",
+            }}
+          />
+        )}
 
         <BibFaseStap
           nr={1}
           titel="Stap 1"
-          subtitel="Bouwstenen verzamelen"
+          subtitel={isMobile ? "" : "Bouwstenen verzamelen"}
           aktief={fase === 1}
           gedaan={fase > 1}
           onClick={() => setFase(1)}
@@ -717,7 +745,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
         <BibFaseStap
           nr={2}
           titel="Stap 2"
-          subtitel="Jouw verhaal schrijven"
+          subtitel={isMobile ? "" : "Jouw verhaal schrijven"}
           aktief={fase === 2}
           gedaan={false}
           onClick={() => setFase(2)}
@@ -728,39 +756,43 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
             marginLeft: "auto",
             display: "flex",
             alignItems: "center",
-            gap: 14,
+            gap: isMobile ? 8 : 14,
           }}
         >
           {fase === 1 && (
             <>
-              <div style={{ fontSize: 12, color: BIB.antracietSoft }}>
-                <b
-                  style={{
-                    color: klaarVoorSchrijven ? BIB.levendig : BIB.antraciet,
-                    fontFamily: BIB.tekst,
-                  }}
-                >
-                  {gevuldAantal}
-                </b>
-                /{stappen.length} bouwstenen
-              </div>
+              {!isMobile && (
+                <div style={{ fontSize: 12, color: BIB.antracietSoft }}>
+                  <b
+                    style={{
+                      color: klaarVoorSchrijven ? BIB.levendig : BIB.antraciet,
+                      fontFamily: BIB.tekst,
+                    }}
+                  >
+                    {gevuldAantal}
+                  </b>
+                  /{stappen.length} bouwstenen
+                </div>
+              )}
               <button
                 onClick={() => klaarVoorSchrijven && setFase(2)}
                 disabled={!klaarVoorSchrijven}
                 style={{
-                  padding: "9px 16px",
+                  padding: isMobile ? "8px 12px" : "9px 16px",
                   borderRadius: 4,
                   border: "none",
                   background: klaarVoorSchrijven ? BIB.antraciet : BIB.beigeSoft,
                   color: klaarVoorSchrijven ? BIB.wit : BIB.antracietSoft,
-                  fontSize: 13,
+                  fontSize: isMobile ? 12 : 13,
                   fontWeight: 700,
                   fontFamily: BIB.tekst,
                   cursor: klaarVoorSchrijven ? "pointer" : "not-allowed",
                   letterSpacing: 0.2,
                 }}
               >
-                Klaar om te schrijven →
+                {isMobile
+                  ? `Schrijven →`
+                  : "Klaar om te schrijven →"}
               </button>
             </>
           )}
@@ -768,29 +800,91 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
             <button
               onClick={() => setKlaar(true)}
               style={{
-                padding: "9px 16px",
+                padding: isMobile ? "8px 12px" : "9px 16px",
                 borderRadius: 4,
                 border: "none",
                 background: BIB.antraciet,
                 color: BIB.wit,
-                fontSize: 13,
+                fontSize: isMobile ? 12 : 13,
                 fontWeight: 700,
                 fontFamily: BIB.tekst,
                 cursor: "pointer",
                 letterSpacing: 0.2,
               }}
             >
-              Ik ben klaar →
+              {isMobile ? "Klaar →" : "Ik ben klaar →"}
             </button>
           )}
         </div>
       </div>
 
+      {/* TAB SWITCHER (alleen mobiel) */}
+      {isMobile && (
+        <div
+          role="tablist"
+          style={{
+            display: "flex",
+            borderBottom: `1px solid ${BIB.line}`,
+            background: BIB.wit,
+            padding: "0 8px",
+          }}
+        >
+          {(
+            [
+              { id: "werkvlak", label: fase === 1 ? "Werkblad" : "Verhaal" },
+              { id: "coach", label: "Coach" },
+            ] as const
+          ).map((t) => {
+            const actief = mobielTab === t.id;
+            return (
+              <button
+                key={t.id}
+                role="tab"
+                aria-selected={actief}
+                onClick={() => setMobielTab(t.id)}
+                style={{
+                  flex: 1,
+                  padding: "10px 8px",
+                  background: "transparent",
+                  border: "none",
+                  borderBottom: actief
+                    ? `2px solid ${BIB.antraciet}`
+                    : "2px solid transparent",
+                  color: actief ? BIB.antraciet : BIB.antracietSoft,
+                  fontSize: 13,
+                  fontWeight: actief ? 700 : 500,
+                  fontFamily: BIB.tekst,
+                  cursor: "pointer",
+                  letterSpacing: 0.2,
+                  position: "relative",
+                }}
+              >
+                {t.label}
+                {t.id === "coach" && nieuweBadge && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: 6,
+                      right: "calc(50% - 36px)",
+                      width: 8,
+                      height: 8,
+                      borderRadius: 99,
+                      background: BIB.oranje,
+                      animation: "badgePulse 1s ease-in-out infinite",
+                    }}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* HOOFDZONE */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "minmax(440px, 38fr) 62fr",
+          gridTemplateColumns: isMobile ? "1fr" : "minmax(440px, 38fr) 62fr",
           overflow: "hidden",
           minHeight: 0,
         }}
@@ -799,8 +893,8 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
         <div
           style={{
             background: BIB.koel,
-            borderRight: `1px solid ${BIB.line}`,
-            display: "flex",
+            borderRight: isMobile ? "none" : `1px solid ${BIB.line}`,
+            display: isMobile && mobielTab !== "coach" ? "none" : "flex",
             flexDirection: "column",
             minHeight: 0,
             position: "relative",
@@ -1242,7 +1336,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                   border: "none",
                   outline: "none",
                   color: BIB.antraciet,
-                  fontSize: 13.5,
+                  fontSize: isMobile ? 16 : 13.5,
                   fontFamily: BIB.tekst,
                   resize: "none",
                   padding: "5px 0",
@@ -1280,7 +1374,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
         <div
           style={{
             background: BIB.beige,
-            display: "flex",
+            display: isMobile && mobielTab !== "werkvlak" ? "none" : "flex",
             flexDirection: "column",
             overflow: "hidden",
             minHeight: 0,
@@ -1491,7 +1585,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                               border: `1px solid ${BIB.line}`,
                               borderRadius: 4,
                               padding: "8px 10px",
-                              fontSize: 13,
+                              fontSize: isMobile ? 16 : 13,
                               fontFamily: BIB.tekst,
                               color: BIB.antraciet,
                               outline: "none",
@@ -1681,7 +1775,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                     border: "none",
                     outline: "none",
                     color: BIB.antracietSoft,
-                    fontSize: 12.5,
+                    fontSize: isMobile ? 16 : 12.5,
                     fontStyle: "italic",
                     fontFamily: BIB.tekst,
                   }}
@@ -1699,15 +1793,19 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                 <textarea
                   value={verhaalTekst}
                   onChange={(e) => setVerhaalTekst(e.target.value)}
-                  placeholder="Begin hier met schrijven. Markeer een zin en vraag links om feedback."
+                  placeholder={
+                    isMobile
+                      ? "Begin hier met schrijven. Tik op een zin en vraag feedback via de Coach-tab."
+                      : "Begin hier met schrijven. Markeer een zin en vraag links om feedback."
+                  }
                   style={{
                     width: "100%",
                     flex: 1,
                     background: BIB.wit,
                     border: `1px solid ${BIB.line}`,
                     borderRadius: 6,
-                    padding: "18px 22px",
-                    fontSize: 14.5,
+                    padding: isMobile ? "14px 16px" : "18px 22px",
+                    fontSize: isMobile ? 16 : 14.5,
                     lineHeight: 1.75,
                     fontFamily: BIB.tekst,
                     color: BIB.antraciet,

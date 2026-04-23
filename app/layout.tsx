@@ -14,7 +14,10 @@ export default function RootLayout({
   return (
     <html lang="nl">
       <body>
-        <div id="root" style={{ width: "100vw", height: "100vh" }}>
+        <div
+          id="root"
+          style={{ width: "100vw", height: "100dvh", minHeight: "100vh" }}
+        >
           {children}
         </div>
       </body>

@@ -214,7 +214,7 @@ export function BibOnboarding({ leerling, onStart }: Props) {
                   border: `1.5px solid ${BIB.line}`,
                   background: BIB.wit,
                   color: BIB.antraciet,
-                  fontSize: 15,
+                  fontSize: 16,
                   fontFamily: BIB.tekst,
                   outline: "none",
                 }}
@@ -250,7 +250,7 @@ export function BibOnboarding({ leerling, onStart }: Props) {
                   border: `1.5px solid ${BIB.line}`,
                   background: BIB.wit,
                   color: BIB.antraciet,
-                  fontSize: 15,
+                  fontSize: 16,
                   fontFamily: BIB.tekst,
                   outline: "none",
                 }}
