@@ -4,14 +4,15 @@ import React from "react";
 import { BIB } from "@/lib/tokens";
 import { BibLogo } from "./BibLogo";
 import { BibIcon, type IconName } from "./BibIcon";
-import { BibBadge } from "./BibBadge";
+import { BibMedaille } from "./BibMedaille";
+import { BADGES, type BadgeId } from "@/lib/badges";
 
 type Props = {
   titel: string;
   tekst: string;
   auteur: string;
   klas: string;
-  badges: string[];
+  verdiendeBadges: Set<BadgeId>;
   onDicht: () => void;
   onWord: () => void;
   onPdf: () => void;
@@ -62,13 +63,14 @@ export function BibKlaarScherm({
   tekst,
   auteur,
   klas,
-  badges,
+  verdiendeBadges,
   onDicht,
   onWord,
   onPdf,
   onMail,
   onReset,
 }: Props) {
+  const aantalBadges = verdiendeBadges.size;
   const woorden = tekst.trim() ? tekst.trim().split(/\s+/).filter(Boolean).length : 0;
   return (
     <div
@@ -204,8 +206,15 @@ export function BibKlaarScherm({
           </div>
         </div>
 
-        {badges.length > 0 && (
-          <div style={{ marginBottom: 22 }}>
+        <div style={{ marginBottom: 22 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              justifyContent: "space-between",
+              marginBottom: 12,
+            }}
+          >
             <div
               style={{
                 fontFamily: BIB.kop,
@@ -214,18 +223,61 @@ export function BibKlaarScherm({
                 letterSpacing: 1.2,
                 textTransform: "uppercase",
                 color: BIB.antracietSoft,
-                marginBottom: 8,
               }}
             >
               Je hebt verdiend
             </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {badges.map((b, i) => (
-                <BibBadge key={i}>{b}</BibBadge>
-              ))}
+            <div
+              style={{
+                fontFamily: BIB.tekst,
+                fontSize: 12,
+                color: BIB.antracietSoft,
+              }}
+            >
+              <b style={{ color: BIB.antraciet }}>{aantalBadges}</b> van de{" "}
+              {BADGES.length} medailles
             </div>
           </div>
-        )}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: "18px 12px",
+              justifyItems: "center",
+              padding: "4px 0",
+            }}
+          >
+            {BADGES.map((def) => {
+              const behaald = verdiendeBadges.has(def.id);
+              return (
+                <div
+                  key={def.id}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <BibMedaille def={def} behaald={behaald} isNieuw={false} />
+                  <div
+                    style={{
+                      fontSize: 10.5,
+                      textAlign: "center",
+                      color: behaald ? BIB.antraciet : BIB.antracietSoft,
+                      fontWeight: behaald ? 600 : 400,
+                      fontFamily: BIB.tekst,
+                      lineHeight: 1.3,
+                      maxWidth: 100,
+                    }}
+                  >
+                    {def.titel}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
         <div
           style={{

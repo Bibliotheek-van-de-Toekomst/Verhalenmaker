@@ -343,13 +343,6 @@ export function VerhaalMaker({
     await verstuur(selectie, vraagTekst);
   };
 
-  const berekenBadges = () => {
-    const ids = berekenBadgeIds(bouwstenen, verhaalTekst);
-    return Array.from(ids)
-      .map((id) => BADGES.find((b) => b.id === id)?.titel)
-      .filter(Boolean) as string[];
-  };
-
   const aantalBadges = verdiendeBadges.size;
   const heroTitel =
     aantalBadges === 0
@@ -604,7 +597,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
           tekst={verhaalTekst}
           auteur={auteurNaam}
           klas={leerling.klas}
-          badges={berekenBadges()}
+          verdiendeBadges={berekenBadgeIds(bouwstenen, verhaalTekst)}
           onDicht={() => setKlaar(false)}
           onWord={exporteerWord}
           onPdf={exporteerPdf}
