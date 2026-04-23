@@ -119,13 +119,8 @@ export function VerhaalMaker({
   >(null);
 
   const [lastSave, setLastSave] = React.useState(Date.now());
-  const [berichten, setBerichten] = React.useState<Bericht[]>([
-    {
-      van: "bot",
-      tekst:
-        "Hoi! Leuk dat je meedoet.\n\nWe werken in twee stappen:\n**Stap 1** — bouwstenen verzamelen (rechts)\n**Stap 2** — jij schrijft, ik help je aanscherpen\n\nMet welke bouwsteen wil je beginnen?",
-    },
-  ]);
+  const [berichten, setBerichten] = React.useState<Bericht[]>([]);
+  const berichtenScrollRef = React.useRef<HTMLDivElement>(null);
 
   const [modellen, setModellen] = React.useState<BeschikbaarModel[]>([]);
   const [modelId, setModelId] = React.useState<string | null>(null);
@@ -210,6 +205,27 @@ export function VerhaalMaker({
       ]);
     }
   }, [fase, berichten]);
+
+  React.useEffect(() => {
+    if (hydrated && !onboarding && berichten.length === 0 && leerling.naam) {
+      setBerichten([
+        {
+          van: "bot",
+          tekst: `Hoi ${leerling.naam}! Leuk dat je meedoet.\n\nWe werken in twee stappen:\n**Stap 1** — bouwstenen verzamelen (rechts)\n**Stap 2** — jij schrijft, ik help je aanscherpen\n\nMet welke bouwsteen wil je beginnen?`,
+        },
+      ]);
+    }
+  }, [hydrated, onboarding, berichten.length, leerling.naam]);
+
+  React.useEffect(() => {
+    const last = berichten[berichten.length - 1];
+    if (last?.van !== "ik") return;
+    const container = berichtenScrollRef.current;
+    if (!container) return;
+    const msgs = container.querySelectorAll(".bib-msg");
+    const lastMsg = msgs[msgs.length - 1] as HTMLElement | undefined;
+    lastMsg?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [berichten.length]);
 
   const verstuur = async (extraContext?: string, retryVraag?: string) => {
     const vraag = retryVraag || input;
@@ -387,18 +403,6 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
     window.location.href = `mailto:${o}?subject=${encodeURIComponent(`Mijn verhaal: ${verhaalTitel}`)}&body=${encodeURIComponent(body)}`;
   };
 
-  const chipBtn: React.CSSProperties = {
-    padding: "5px 10px",
-    borderRadius: 99,
-    border: `1px solid ${BIB.line}`,
-    background: BIB.wit,
-    color: BIB.antracietSoft,
-    fontSize: 11,
-    fontWeight: 400,
-    cursor: "pointer",
-    fontFamily: BIB.tekst,
-  };
-
   return (
     <div
       style={{
@@ -419,7 +423,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
         @keyframes bibBounce { 0%,80%,100% { transform: translateY(0); opacity: 0.4 } 40% { transform: translateY(-4px); opacity: 1 } }
         @keyframes bibPulse  { 0%,100% { opacity: 1 } 50% { opacity: 0.35 } }
         @keyframes bibFadeIn { from { opacity: 0; transform: translateY(4px) } to { opacity: 1; transform: translateY(0) } }
-        .bib-msg { animation: bibFadeIn 0.24s ease both; }
+        .bib-msg { animation: bibFadeIn 0.24s ease both; scroll-margin-top: 20px; }
       `}</style>
 
       {onboarding && (
@@ -624,7 +628,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "400px 1fr",
+          gridTemplateColumns: "1fr 1.618fr",
           overflow: "hidden",
           minHeight: 0,
         }}
@@ -855,6 +859,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
 
           {/* BERICHTEN */}
           <div
+            ref={berichtenScrollRef}
             style={{
               flex: 1,
               overflow: "auto",
@@ -997,7 +1002,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
             </div>
           </div>
 
-          {/* SUGGESTIE-CHIPS + INPUT */}
+          {/* INPUT */}
           <div
             style={{
               padding: "10px 20px 14px",
@@ -1005,23 +1010,6 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
               background: BIB.wit,
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                gap: 6,
-                marginBottom: 8,
-                flexWrap: "wrap",
-              }}
-            >
-              {(fase === 1
-                ? ["Hoe kan deze bouwsteen scherper?", "Wat mist er?", "Geef een voorbeeld"]
-                : ["Is mijn begin sterk?", "Welke zin is vaag?", "Hoe maak ik dit filmischer?"]
-              ).map((q) => (
-                <button key={q} onClick={() => setInput(q)} style={chipBtn}>
-                  {q}
-                </button>
-              ))}
-            </div>
             <div
               style={{
                 display: "flex",
