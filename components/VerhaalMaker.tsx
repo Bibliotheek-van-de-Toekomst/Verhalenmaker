@@ -809,7 +809,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
         {/* LINKS — coach */}
         <div
           style={{
-            background: BIB.beige,
+            background: BIB.wit,
             borderRight: `1px solid ${BIB.line}`,
             display: "flex",
             flexDirection: "column",
@@ -831,7 +831,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                 width: 30,
                 height: 30,
                 borderRadius: 99,
-                background: BIB.wit,
+                background: BIB.beige,
                 display: "grid",
                 placeItems: "center",
               }}
@@ -860,8 +860,8 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
               style={{
                 padding: "5px 10px",
                 borderRadius: 99,
-                border: `1px solid ${promptInfoOpen ? BIB.antraciet : BIB.line}`,
-                background: BIB.wit,
+                border: `1px solid ${BIB.line}`,
+                background: promptInfoOpen ? BIB.beige : BIB.wit,
                 color: BIB.antraciet,
                 fontSize: 11,
                 fontWeight: 700,
@@ -1037,7 +1037,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
               flex: 1,
               overflow: "auto",
               padding: "18px 20px",
-              background: BIB.beige,
+              background: BIB.wit,
             }}
           >
             <div
@@ -1063,7 +1063,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                       height: 28,
                       borderRadius: 99,
                       flexShrink: 0,
-                      background: BIB.wit,
+                      background: b.van === "bot" ? BIB.beige : BIB.wit,
                       border: b.van === "ik" ? `1.5px solid ${BIB.antraciet}` : "none",
                       color: BIB.antraciet,
                       display: "grid",
@@ -1082,8 +1082,8 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                       background:
                         b.van === "bot"
                           ? b.isError
-                            ? BIB.beigeSoft
-                            : BIB.wit
+                            ? "#fdebe5"
+                            : BIB.beige
                           : BIB.wit,
                       color: BIB.antraciet,
                       padding: "10px 13px",
@@ -1141,7 +1141,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                       width: 28,
                       height: 28,
                       borderRadius: 99,
-                      background: BIB.wit,
+                      background: BIB.beige,
                       display: "grid",
                       placeItems: "center",
                     }}
@@ -1151,7 +1151,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                   <div
                     style={{
                       padding: "12px 14px",
-                      background: BIB.wit,
+                      background: BIB.beige,
                       borderRadius: 6,
                       display: "flex",
                       gap: 5,
@@ -1180,7 +1180,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
             style={{
               padding: "10px 20px 14px",
               borderTop: `1px solid ${BIB.line}`,
-              background: BIB.beige,
+              background: BIB.wit,
             }}
           >
             <div
@@ -1252,7 +1252,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
         {/* RECHTS */}
         <div
           style={{
-            background: BIB.wit,
+            background: BIB.beige,
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
@@ -1317,7 +1317,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                       key={i}
                       onClick={() => setStap(i)}
                       style={{
-                        background: BIB.beigeSoft,
+                        background: BIB.wit,
                         border: aktief
                           ? `2px solid ${BIB.antraciet}`
                           : `1px solid ${BIB.line}`,
@@ -1485,6 +1485,49 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                               {info.tip}
                             </div>
                           )}
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "flex-end",
+                              marginTop: 10,
+                            }}
+                          >
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (i < stappen.length - 1) setStap(i + 1);
+                                else if (klaarVoorSchrijven) setFase(2);
+                              }}
+                              disabled={
+                                i === stappen.length - 1 && !klaarVoorSchrijven
+                              }
+                              style={{
+                                padding: "8px 14px",
+                                borderRadius: 4,
+                                border: "none",
+                                background:
+                                  i === stappen.length - 1 && !klaarVoorSchrijven
+                                    ? BIB.beigeSoft
+                                    : BIB.antraciet,
+                                color:
+                                  i === stappen.length - 1 && !klaarVoorSchrijven
+                                    ? BIB.antracietSoft
+                                    : BIB.wit,
+                                fontSize: 12.5,
+                                fontWeight: 700,
+                                fontFamily: BIB.tekst,
+                                cursor:
+                                  i === stappen.length - 1 && !klaarVoorSchrijven
+                                    ? "not-allowed"
+                                    : "pointer",
+                                letterSpacing: 0.2,
+                              }}
+                            >
+                              {i < stappen.length - 1
+                                ? "Klaar, volgende →"
+                                : "Klaar om te schrijven →"}
+                            </button>
+                          </div>
                         </>
                       )}
                       {!aktief && bouwstenen[String(s.n)] && (
@@ -1511,7 +1554,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                 style={{
                   padding: "12px 20px 10px",
                   borderBottom: `1px solid ${BIB.line}`,
-                  background: BIB.beigeSoft,
+                  background: BIB.wit,
                 }}
               >
                 <div
@@ -1657,7 +1700,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                   fontSize: 11.5,
                   color: BIB.antracietSoft,
                   borderTop: `1px solid ${BIB.line}`,
-                  background: BIB.beigeSoft,
+                  background: BIB.wit,
                 }}
               >
                 <span>
