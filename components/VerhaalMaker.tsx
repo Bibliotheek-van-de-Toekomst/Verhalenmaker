@@ -761,22 +761,31 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
         >
           {fase === 1 && (
             <>
-              {!isMobile && (
-                <div style={{ fontSize: 12, color: BIB.antracietSoft }}>
-                  <b
-                    style={{
-                      color: klaarVoorSchrijven ? BIB.levendig : BIB.antraciet,
-                      fontFamily: BIB.tekst,
-                    }}
-                  >
-                    {gevuldAantal}
-                  </b>
-                  /{stappen.length} bouwstenen
-                </div>
-              )}
+              <div
+                style={{
+                  fontSize: isMobile ? 11.5 : 12,
+                  color: BIB.antracietSoft,
+                }}
+              >
+                <b
+                  style={{
+                    color: klaarVoorSchrijven ? BIB.levendig : BIB.antraciet,
+                    fontFamily: BIB.tekst,
+                  }}
+                >
+                  {gevuldAantal}
+                </b>
+                /{stappen.length}
+                {!isMobile && " bouwstenen"}
+              </div>
               <button
                 onClick={() => klaarVoorSchrijven && setFase(2)}
                 disabled={!klaarVoorSchrijven}
+                title={
+                  klaarVoorSchrijven
+                    ? undefined
+                    : "Vul minstens 4 bouwstenen in om door te gaan"
+                }
                 style={{
                   padding: isMobile ? "8px 12px" : "9px 16px",
                   borderRadius: 4,
@@ -791,7 +800,11 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                 }}
               >
                 {isMobile
-                  ? `Schrijven →`
+                  ? klaarVoorSchrijven
+                    ? "Schrijven →"
+                    : `Nog ${4 - gevuldAantal} bouwsteen${
+                        4 - gevuldAantal === 1 ? "" : "en"
+                      }`
                   : "Klaar om te schrijven →"}
               </button>
             </>
