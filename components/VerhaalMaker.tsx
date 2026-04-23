@@ -921,7 +921,14 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
             <>
               <div
                 onClick={() => setBadgesOpen(false)}
-                style={{ position: "fixed", inset: 0, zIndex: 9 }}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  zIndex: 9,
+                  background: "rgba(57,55,58,0.18)",
+                  backdropFilter: "blur(2px)",
+                  WebkitBackdropFilter: "blur(2px)",
+                }}
               />
               <div
                 style={{
@@ -933,15 +940,16 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                   background: BIB.wit,
                   border: `1px solid ${BIB.bubbelRand}`,
                   borderRadius: 6,
-                  boxShadow: "0 8px 28px rgba(57,55,58,0.14)",
-                  overflow: "hidden",
+                  boxShadow: "0 14px 40px rgba(57,55,58,0.28)",
                 }}
               >
                 <div
                   style={{
                     padding: "20px 20px 16px",
-                    background: BIB.beige,
-                    borderBottom: `1px solid ${BIB.line}`,
+                    background: BIB.koel,
+                    borderBottom: `1px solid ${BIB.bubbelRand}`,
+                    borderTopLeftRadius: 6,
+                    borderTopRightRadius: 6,
                     display: "flex",
                     alignItems: "flex-start",
                     gap: 8,
