@@ -97,6 +97,7 @@ export function VerhaalMaker({
   const [bezig, setBezig] = React.useState(false);
   const [tipOpen, setTipOpen] = React.useState<number | null>(null);
   const [promptInfoOpen, setPromptInfoOpen] = React.useState(false);
+  const [bekekenBouwsteen, setBekekenBouwsteen] = React.useState<number | null>(null);
 
   const stappen = BIB_STAPPEN.slice(0, stepCount);
 
@@ -436,6 +437,171 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
         />
       )}
 
+      {bekekenBouwsteen !== null && (() => {
+        const s = stappen.find((s) => s.n === bekekenBouwsteen);
+        if (!s) return null;
+        const content = bouwstenen[String(s.n)] || "";
+        return (
+          <div
+            role="dialog"
+            aria-modal="true"
+            onClick={() => setBekekenBouwsteen(null)}
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 60,
+              background: "rgba(57,55,58,0.55)",
+              backdropFilter: "blur(4px)",
+              display: "grid",
+              placeItems: "center",
+              fontFamily: BIB.tekst,
+              padding: 20,
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: BIB.wit,
+                borderRadius: 6,
+                width: "min(480px, 100%)",
+                padding: "26px 28px 22px",
+                boxShadow: "0 24px 60px rgba(57,55,58,0.3)",
+                position: "relative",
+              }}
+            >
+              <button
+                onClick={() => setBekekenBouwsteen(null)}
+                aria-label="Sluiten"
+                style={{
+                  position: "absolute",
+                  top: 12,
+                  right: 12,
+                  width: 28,
+                  height: 28,
+                  borderRadius: 99,
+                  border: "none",
+                  background: BIB.beige,
+                  color: BIB.antraciet,
+                  fontSize: 16,
+                  cursor: "pointer",
+                  fontFamily: BIB.tekst,
+                  lineHeight: 1,
+                }}
+              >
+                ×
+              </button>
+              <div
+                style={{
+                  fontFamily: BIB.kop,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: 1.2,
+                  textTransform: "uppercase",
+                  color: BIB.antracietSoft,
+                  marginBottom: 4,
+                }}
+              >
+                Bouwsteen {s.n}
+              </div>
+              <div
+                style={{
+                  fontFamily: BIB.kop,
+                  fontSize: 22,
+                  fontWeight: 600,
+                  color: BIB.antraciet,
+                  letterSpacing: -0.2,
+                  marginBottom: 10,
+                }}
+              >
+                {s.titel}
+              </div>
+              <div
+                style={{
+                  fontSize: 12.5,
+                  color: BIB.antracietSoft,
+                  marginBottom: 14,
+                  lineHeight: 1.55,
+                  fontStyle: "italic",
+                }}
+              >
+                {s.hint}
+              </div>
+              <div
+                style={{
+                  background: content ? BIB.beige : BIB.beigeSoft,
+                  padding: "14px 16px",
+                  borderRadius: 6,
+                  fontSize: 14,
+                  color: content ? BIB.antraciet : BIB.antracietSoft,
+                  lineHeight: 1.65,
+                  whiteSpace: "pre-wrap",
+                  minHeight: 60,
+                  fontStyle: content ? "normal" : "italic",
+                }}
+              >
+                {content || "Nog niet ingevuld."}
+              </div>
+              <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+                <button
+                  onClick={() => {
+                    setStap(s.n - 1);
+                    setFase(1);
+                    setBekekenBouwsteen(null);
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: "11px 14px",
+                    borderRadius: 4,
+                    border: `1.5px solid ${BIB.antraciet}`,
+                    background: BIB.wit,
+                    color: BIB.antraciet,
+                    fontSize: 13.5,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    fontFamily: BIB.tekst,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                  }}
+                >
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke={BIB.antraciet}
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+                  </svg>
+                  {content ? "Aanpassen" : "Invullen"}
+                </button>
+                <button
+                  onClick={() => setBekekenBouwsteen(null)}
+                  style={{
+                    padding: "11px 14px",
+                    borderRadius: 4,
+                    border: `1px solid ${BIB.line}`,
+                    background: "transparent",
+                    color: BIB.antracietSoft,
+                    fontSize: 13.5,
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    fontFamily: BIB.tekst,
+                  }}
+                >
+                  Sluiten
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {klaar && (
         <BibKlaarScherm
           titel={verhaalTitel}
@@ -473,13 +639,13 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
         <div
           style={{
             background: BIB.wit,
-            padding: "6px 10px 6px 12px",
+            padding: "6px 12px",
             borderRadius: 2,
           }}
         >
-          <BibLogo subnaam={subnaam} height={28} />
+          <BibLogo subnaam={subnaam} height={44} />
         </div>
-        <PijlerRij actief="Lees" klein />
+        <PijlerRij actief={["Lees", "Doe"]} klein />
         <div
           style={{
             marginLeft: "auto",
@@ -1358,9 +1524,10 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                   {stappen.map((s, i) => {
                     const gevuld = !!bouwstenen[String(s.n)];
                     return (
-                      <div
+                      <button
                         key={i}
-                        title={bouwstenen[String(s.n)] || "(leeg)"}
+                        onClick={() => setBekekenBouwsteen(s.n)}
+                        title={gevuld ? "Klik om te bekijken of aan te passen" : "Nog niet ingevuld — klik om in te vullen"}
                         style={{
                           padding: "3px 10px",
                           borderRadius: 99,
@@ -1369,12 +1536,12 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                           color: gevuld ? BIB.antraciet : BIB.antracietSoft,
                           fontSize: 11,
                           fontWeight: 600,
-                          cursor: "help",
+                          cursor: "pointer",
                           fontFamily: BIB.tekst,
                         }}
                       >
                         {s.titel}
-                      </div>
+                      </button>
                     );
                   })}
                   <button

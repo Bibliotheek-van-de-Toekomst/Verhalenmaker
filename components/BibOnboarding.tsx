@@ -42,7 +42,7 @@ export function BibOnboarding({ leerling, onStart }: Props) {
         }}
       >
         <div style={{ marginBottom: 18 }}>
-          <BibLogo height={30} />
+          <BibLogo height={44} />
         </div>
         {step === 0 ? (
           <>

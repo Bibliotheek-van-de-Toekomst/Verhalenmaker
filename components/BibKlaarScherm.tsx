@@ -118,7 +118,7 @@ export function BibKlaarScherm({
           ×
         </button>
         <div style={{ marginBottom: 20 }}>
-          <BibLogo height={28} />
+          <BibLogo height={44} />
         </div>
         <div
           style={{
