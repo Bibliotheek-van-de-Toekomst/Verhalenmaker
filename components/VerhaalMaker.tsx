@@ -674,29 +674,36 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
           gap: 28,
         }}
       >
-        <div style={{ flexShrink: 0 }}>
-          <div
-            style={{
-              fontFamily: BIB.kop,
-              fontSize: 26,
-              fontWeight: 500,
-              color: BIB.antraciet,
-              letterSpacing: -0.2,
-              lineHeight: 1,
-            }}
-          >
-            Verhaalmaker
-          </div>
-          <KrullUnder width={132} />
-          <div
-            style={{
-              fontSize: 11.5,
-              color: BIB.antracietSoft,
-              marginTop: 4,
-              fontFamily: BIB.tekst,
-            }}
-          >
-            Workshop creatief schrijven
+        <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 12 }}>
+          <img
+            src="/verhaalmaker.svg"
+            alt=""
+            style={{ width: 40, height: 40, display: "block" }}
+          />
+          <div>
+            <div
+              style={{
+                fontFamily: BIB.kop,
+                fontSize: 26,
+                fontWeight: 500,
+                color: BIB.antraciet,
+                letterSpacing: -0.2,
+                lineHeight: 1,
+              }}
+            >
+              Verhaalmaker
+            </div>
+            <KrullUnder width={132} />
+            <div
+              style={{
+                fontSize: 11.5,
+                color: BIB.antracietSoft,
+                marginTop: 4,
+                fontFamily: BIB.tekst,
+              }}
+            >
+              Workshop creatief schrijven
+            </div>
           </div>
         </div>
 
@@ -802,7 +809,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
         {/* LINKS — coach */}
         <div
           style={{
-            background: BIB.wit,
+            background: BIB.beige,
             borderRight: `1px solid ${BIB.line}`,
             display: "flex",
             flexDirection: "column",
@@ -824,7 +831,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                 width: 30,
                 height: 30,
                 borderRadius: 99,
-                background: BIB.beige,
+                background: BIB.wit,
                 display: "grid",
                 placeItems: "center",
               }}
@@ -853,8 +860,8 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
               style={{
                 padding: "5px 10px",
                 borderRadius: 99,
-                border: `1px solid ${BIB.line}`,
-                background: promptInfoOpen ? BIB.beige : BIB.wit,
+                border: `1px solid ${promptInfoOpen ? BIB.antraciet : BIB.line}`,
+                background: BIB.wit,
                 color: BIB.antraciet,
                 fontSize: 11,
                 fontWeight: 700,
@@ -1030,7 +1037,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
               flex: 1,
               overflow: "auto",
               padding: "18px 20px",
-              background: BIB.wit,
+              background: BIB.beige,
             }}
           >
             <div
@@ -1056,7 +1063,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                       height: 28,
                       borderRadius: 99,
                       flexShrink: 0,
-                      background: b.van === "bot" ? BIB.beige : BIB.wit,
+                      background: BIB.wit,
                       border: b.van === "ik" ? `1.5px solid ${BIB.antraciet}` : "none",
                       color: BIB.antraciet,
                       display: "grid",
@@ -1075,8 +1082,8 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                       background:
                         b.van === "bot"
                           ? b.isError
-                            ? "#fdebe5"
-                            : BIB.beige
+                            ? BIB.beigeSoft
+                            : BIB.wit
                           : BIB.wit,
                       color: BIB.antraciet,
                       padding: "10px 13px",
@@ -1134,7 +1141,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                       width: 28,
                       height: 28,
                       borderRadius: 99,
-                      background: BIB.beige,
+                      background: BIB.wit,
                       display: "grid",
                       placeItems: "center",
                     }}
@@ -1144,7 +1151,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                   <div
                     style={{
                       padding: "12px 14px",
-                      background: BIB.beige,
+                      background: BIB.wit,
                       borderRadius: 6,
                       display: "flex",
                       gap: 5,
@@ -1173,7 +1180,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
             style={{
               padding: "10px 20px 14px",
               borderTop: `1px solid ${BIB.line}`,
-              background: BIB.wit,
+              background: BIB.beige,
             }}
           >
             <div
@@ -1245,7 +1252,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
         {/* RECHTS */}
         <div
           style={{
-            background: BIB.beige,
+            background: BIB.wit,
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
@@ -1310,7 +1317,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                       key={i}
                       onClick={() => setStap(i)}
                       style={{
-                        background: BIB.wit,
+                        background: BIB.beigeSoft,
                         border: aktief
                           ? `2px solid ${BIB.antraciet}`
                           : `1px solid ${BIB.line}`,
@@ -1504,7 +1511,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                 style={{
                   padding: "12px 20px 10px",
                   borderBottom: `1px solid ${BIB.line}`,
-                  background: BIB.wit,
+                  background: BIB.beigeSoft,
                 }}
               >
                 <div
@@ -1650,7 +1657,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                   fontSize: 11.5,
                   color: BIB.antracietSoft,
                   borderTop: `1px solid ${BIB.line}`,
-                  background: BIB.wit,
+                  background: BIB.beigeSoft,
                 }}
               >
                 <span>
