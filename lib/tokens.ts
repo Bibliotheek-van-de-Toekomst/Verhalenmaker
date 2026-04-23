@@ -8,6 +8,9 @@ export const BIB = {
   line: "#e5ddd1",
   vaag: "#c64a2e",
   levendig: "#3f8a5a",
+  koel: "#f4f3f5",
+  koelSoft: "#faf9fa",
+  bubbelRand: "#e8e6ea",
   kop: '"The Mix", "TheMixOT", Georgia, serif',
   tekst: "Arial, Helvetica, sans-serif",
 } as const;

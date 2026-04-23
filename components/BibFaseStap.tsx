@@ -18,8 +18,8 @@ export function BibFaseStap({ nr, titel, subtitel, aktief, gedaan, onClick }: Pr
       onClick={onClick}
       style={{
         padding: "6px 14px 6px 10px",
-        background: aktief ? BIB.beige : "transparent",
-        border: "none",
+        background: aktief ? BIB.koel : "transparent",
+        border: aktief ? `1px solid ${BIB.bubbelRand}` : "1px solid transparent",
         borderRadius: 99,
         cursor: "pointer",
         fontFamily: BIB.tekst,

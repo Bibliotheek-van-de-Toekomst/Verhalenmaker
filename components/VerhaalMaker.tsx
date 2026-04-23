@@ -7,12 +7,13 @@ import { BibLogo } from "./BibLogo";
 import { PijlerRij } from "./PijlerRij";
 import { BibIcon, type IconName } from "./BibIcon";
 import { KrullUnder } from "./KrullUnder";
-import { BibBadge } from "./BibBadge";
 import { BibFaseStap } from "./BibFaseStap";
 import { BibAutoSaveDot } from "./BibAutoSaveDot";
 import { BibOnboarding } from "./BibOnboarding";
 import { BibKlaarScherm } from "./BibKlaarScherm";
 import { ModelSelector, type BeschikbaarModel } from "./ModelSelector";
+import { BibMedaille } from "./BibMedaille";
+import { BADGES, berekenBadgeIds, type BadgeId } from "@/lib/badges";
 
 const LS_KEY_BIB = "verhaalmaker.bib.v1";
 const LS_KEY_MODEL = "verhaalmaker.model.v1";
@@ -35,6 +36,7 @@ type SavedState = Partial<{
   auteur: string;
   leerling: Leerling;
   berichten: Bericht[];
+  verdiendeBadges: string[];
 }>;
 
 function loadLS(): SavedState {
@@ -96,8 +98,12 @@ export function VerhaalMaker({
   const [input, setInput] = React.useState("");
   const [bezig, setBezig] = React.useState(false);
   const [tipOpen, setTipOpen] = React.useState<number | null>(null);
-  const [promptInfoOpen, setPromptInfoOpen] = React.useState(false);
+  const [badgesOpen, setBadgesOpen] = React.useState(false);
   const [bekekenBouwsteen, setBekekenBouwsteen] = React.useState<number | null>(null);
+  const [verdiendeBadges, setVerdiendeBadges] = React.useState<Set<BadgeId>>(
+    () => new Set(),
+  );
+  const [nieuweBadge, setNieuweBadge] = React.useState<BadgeId | null>(null);
 
   const stappen = BIB_STAPPEN.slice(0, stepCount);
 
@@ -139,6 +145,9 @@ export function VerhaalMaker({
       setOnboarding(false);
     }
     if (saved.berichten && saved.berichten.length) setBerichten(saved.berichten);
+    if (saved.verdiendeBadges && Array.isArray(saved.verdiendeBadges)) {
+      setVerdiendeBadges(new Set(saved.verdiendeBadges as BadgeId[]));
+    }
     const gekozen = localStorage.getItem(LS_KEY_MODEL);
     if (gekozen) setModelId(gekozen);
     setHydrated(true);
@@ -170,6 +179,7 @@ export function VerhaalMaker({
       auteur,
       leerling,
       berichten: berichten.slice(-20),
+      verdiendeBadges: Array.from(verdiendeBadges),
     });
     setLastSave(Date.now());
   }, [
@@ -182,7 +192,20 @@ export function VerhaalMaker({
     auteur,
     leerling,
     berichten,
+    verdiendeBadges,
   ]);
+
+  React.useEffect(() => {
+    if (!hydrated) return;
+    const huidige = berekenBadgeIds(bouwstenen, verhaalTekst);
+    const nieuwe = Array.from(huidige).filter((id) => !verdiendeBadges.has(id));
+    if (nieuwe.length > 0) {
+      setVerdiendeBadges(new Set(huidige));
+      setNieuweBadge(nieuwe[0]);
+      const t = setTimeout(() => setNieuweBadge(null), 2400);
+      return () => clearTimeout(t);
+    }
+  }, [hydrated, bouwstenen, verhaalTekst, verdiendeBadges]);
 
   React.useEffect(() => {
     if (modelId) localStorage.setItem(LS_KEY_MODEL, modelId);
@@ -320,53 +343,26 @@ export function VerhaalMaker({
     await verstuur(selectie, vraagTekst);
   };
 
-  const promptRegels = () => {
-    const gevuld = Object.entries(bouwstenen).filter(([, v]) => v.trim());
-    const regels: { label: string; waarde: string; soort: string }[] = [
-      {
-        label: "Rol AI",
-        waarde: "Aanscherp-coach — schrijft niet voor jou.",
-        soort: "basis",
-      },
-    ];
-    gevuld.forEach(([n, v]) => {
-      const titel = stappen[+n - 1]?.titel ?? `Stap ${n}`;
-      regels.push({ label: titel, waarde: v, soort: "bouwsteen" });
-    });
-    if (fase === 2) {
-      regels.push({
-        label: "Jouw tekst",
-        waarde: `${verhaalTekst.trim().split(/\s+/).filter(Boolean).length} woorden eigen werk`,
-        soort: "basis",
-      });
-    }
-    regels.push({
-      label: "Feedback",
-      waarde:
-        "Vragen stellen, vage zinnen aanwijzen, voorbeelden geven. NOOIT zelf schrijven.",
-      soort: "basis",
-    });
-    return regels;
+  const berekenBadges = () => {
+    const ids = berekenBadgeIds(bouwstenen, verhaalTekst);
+    return Array.from(ids)
+      .map((id) => BADGES.find((b) => b.id === id)?.titel)
+      .filter(Boolean) as string[];
   };
 
-  const berekenBadges = () => {
-    const b: string[] = [];
-    const alles = Object.values(bouwstenen).join(" ").toLowerCase();
-    if (bouwstenen["1"] && /\d/.test(bouwstenen["1"])) b.push("Concreet personage");
-    if (
-      bouwstenen["2"] &&
-      /\d{4}|jaar|herfst|winter|lente|zomer|ochtend|avond|nacht/.test(
-        bouwstenen["2"].toLowerCase(),
-      )
-    )
-      b.push("Tijd-gelaagd");
-    if (/hoor|geluid|zien|voel|ruik|smaak/.test(alles)) b.push("Zintuigen erbij");
-    if (bouwstenen["4"] && bouwstenen["4"].length > 20) b.push("Helder conflict");
-    if (Object.values(bouwstenen).filter((v) => v && v.length > 40).length >= 5)
-      b.push("Rijke context");
-    if (verhaalTekst.split(/\s+/).length > 100) b.push("Eigen zinnen");
-    return b;
-  };
+  const aantalBadges = verdiendeBadges.size;
+  const heroTitel =
+    aantalBadges === 0
+      ? "Verdien je eerste medaille"
+      : aantalBadges === BADGES.length
+        ? "Alle medailles behaald! ✨"
+        : `${aantalBadges} van de ${BADGES.length} medailles`;
+  const heroUitleg =
+    aantalBadges === 0
+      ? "Vul je bouwstenen concreet in om medailles te verdienen. Elke medaille laat iets zien wat jij goed hebt gedaan."
+      : aantalBadges === BADGES.length
+        ? "Alles gelukt! Je hebt elk onderdeel van een sterk verhaal aangeraakt."
+        : "Blijf je bouwstenen aanscherpen en schrijf door — er wachten nog medailles op je.";
 
   const woordenTelling = verhaalTekst.trim()
     ? verhaalTekst.trim().split(/\s+/).filter(Boolean).length
@@ -801,7 +797,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1.618fr",
+          gridTemplateColumns: "minmax(440px, 38fr) 62fr",
           overflow: "hidden",
           minHeight: 0,
         }}
@@ -809,7 +805,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
         {/* LINKS — coach */}
         <div
           style={{
-            background: BIB.wit,
+            background: BIB.koel,
             borderRight: `1px solid ${BIB.line}`,
             display: "flex",
             flexDirection: "column",
@@ -831,12 +827,12 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                 width: 30,
                 height: 30,
                 borderRadius: 99,
-                background: BIB.beige,
+                background: BIB.antraciet,
                 display: "grid",
                 placeItems: "center",
               }}
             >
-              <BibIcon name="chat" size={15} stroke={1.8} />
+              <BibIcon name="chat" size={15} stroke={1.8} color={BIB.wit} />
             </div>
             <div style={{ flex: 1 }}>
               <div
@@ -856,28 +852,75 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
               </div>
             </div>
             <button
-              onClick={() => setPromptInfoOpen(!promptInfoOpen)}
+              onClick={() => setBadgesOpen(!badgesOpen)}
               style={{
-                padding: "5px 10px",
+                position: "relative",
+                padding: "5px 10px 5px 6px",
                 borderRadius: 99,
-                border: `1px solid ${BIB.line}`,
-                background: promptInfoOpen ? BIB.beige : BIB.wit,
+                border: `1px solid ${badgesOpen ? BIB.antraciet : BIB.bubbelRand}`,
+                background: BIB.wit,
                 color: BIB.antraciet,
                 fontSize: 11,
                 fontWeight: 700,
                 cursor: "pointer",
                 fontFamily: BIB.tekst,
                 letterSpacing: 0.2,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 7,
               }}
             >
-              Wat weet de AI?
+              <span
+                style={{
+                  width: 18,
+                  height: 18,
+                  borderRadius: 99,
+                  background: BIB.antraciet,
+                  color: BIB.wit,
+                  display: "grid",
+                  placeItems: "center",
+                  fontSize: 10,
+                  lineHeight: 1,
+                }}
+              >
+                ✳
+              </span>
+              Jouw badges
+              <span
+                style={{
+                  background: BIB.koel,
+                  color: BIB.antraciet,
+                  padding: "1px 7px",
+                  borderRadius: 99,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  border: `1px solid ${BIB.bubbelRand}`,
+                }}
+              >
+                {aantalBadges}/{BADGES.length}
+              </span>
+              {nieuweBadge && (
+                <span
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    top: -3,
+                    right: -3,
+                    width: 9,
+                    height: 9,
+                    borderRadius: 99,
+                    background: BIB.oranje,
+                    animation: "badgePulse 1s ease-in-out infinite",
+                  }}
+                />
+              )}
             </button>
           </div>
 
-          {promptInfoOpen && (
+          {badgesOpen && (
             <>
               <div
-                onClick={() => setPromptInfoOpen(false)}
+                onClick={() => setBadgesOpen(false)}
                 style={{ position: "fixed", inset: 0, zIndex: 9 }}
               />
               <div
@@ -888,14 +931,15 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                   right: 16,
                   zIndex: 10,
                   background: BIB.wit,
-                  border: `1px solid ${BIB.line}`,
+                  border: `1px solid ${BIB.bubbelRand}`,
                   borderRadius: 6,
                   boxShadow: "0 8px 28px rgba(57,55,58,0.14)",
+                  overflow: "hidden",
                 }}
               >
                 <div
                   style={{
-                    padding: "12px 14px",
+                    padding: "20px 20px 16px",
                     background: BIB.beige,
                     borderBottom: `1px solid ${BIB.line}`,
                     display: "flex",
@@ -906,27 +950,42 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                   <div style={{ flex: 1 }}>
                     <div
                       style={{
+                        fontSize: 10,
+                        letterSpacing: 1.6,
+                        textTransform: "uppercase",
+                        color: BIB.antracietSoft,
+                        fontWeight: 700,
                         fontFamily: BIB.kop,
-                        fontSize: 13,
-                        fontWeight: 600,
-                        color: BIB.antraciet,
                       }}
                     >
-                      Wat weet de AI over jouw verhaal?
+                      Jouw prestaties
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: BIB.kop,
+                        fontSize: 20,
+                        fontWeight: 600,
+                        color: BIB.antraciet,
+                        marginTop: 4,
+                        letterSpacing: -0.2,
+                      }}
+                    >
+                      {heroTitel}
                     </div>
                     <div
                       style={{
                         fontSize: 12,
                         color: BIB.antracietSoft,
-                        marginTop: 2,
-                        lineHeight: 1.45,
+                        marginTop: 6,
+                        lineHeight: 1.5,
+                        fontFamily: BIB.tekst,
                       }}
                     >
-                      Wat jij invult in de bouwstenen gaat automatisch mee naar de AI. Hoe concreter, hoe gerichter de feedback.
+                      {heroUitleg}
                     </div>
                   </div>
                   <button
-                    onClick={() => setPromptInfoOpen(false)}
+                    onClick={() => setBadgesOpen(false)}
                     aria-label="Sluiten"
                     style={{
                       width: 22,
@@ -939,6 +998,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                       cursor: "pointer",
                       padding: 0,
                       lineHeight: 1,
+                      flexShrink: 0,
                     }}
                   >
                     ×
@@ -946,85 +1006,46 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                 </div>
                 <div
                   style={{
-                    padding: "12px 14px",
-                    maxHeight: 320,
-                    overflow: "auto",
-                    fontFamily: BIB.tekst,
-                    fontSize: 12,
-                    lineHeight: 1.65,
+                    padding: "22px 20px 24px",
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, 1fr)",
+                    gap: "18px 12px",
+                    justifyItems: "center",
                   }}
                 >
-                  {promptRegels().map((r, i) => (
-                    <div key={i} style={{ marginBottom: 5 }}>
-                      <span
-                        style={{
-                          display: "inline-block",
-                          padding: "2px 7px",
-                          borderRadius: 3,
-                          background:
-                            r.soort === "bouwsteen"
-                              ? BIB.beige
-                              : `${BIB.antracietSoft}22`,
-                          color: BIB.antraciet,
-                          fontFamily: BIB.tekst,
-                          fontSize: 10,
-                          fontWeight: 700,
-                          letterSpacing: 0.4,
-                          marginRight: 6,
-                          textTransform: "uppercase",
-                        }}
-                      >
-                        {r.label}
-                      </span>
-                      <span>{r.waarde}</span>
-                    </div>
-                  ))}
-                </div>
-                <div
-                  style={{
-                    padding: "10px 14px",
-                    borderTop: `1px solid ${BIB.line}`,
-                  }}
-                >
-                  <div
-                    style={{
-                      fontFamily: BIB.kop,
-                      fontSize: 10,
-                      fontWeight: 600,
-                      letterSpacing: 1,
-                      textTransform: "uppercase",
-                      color: BIB.antracietSoft,
-                      marginBottom: 6,
-                    }}
-                  >
-                    Verdiend
-                  </div>
-                  {(() => {
-                    const b = berekenBadges();
-                    return b.length ? (
+                  {BADGES.map((def) => {
+                    const behaald = verdiendeBadges.has(def.id);
+                    return (
                       <div
+                        key={def.id}
                         style={{
                           display: "flex",
-                          flexWrap: "wrap",
-                          gap: 4,
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: 8,
                         }}
                       >
-                        {b.map((naam, i) => (
-                          <BibBadge key={i}>{naam}</BibBadge>
-                        ))}
-                      </div>
-                    ) : (
-                      <div
-                        style={{
-                          fontSize: 11,
-                          color: BIB.antracietSoft,
-                          fontStyle: "italic",
-                        }}
-                      >
-                        Nog geen badges. Maak bouwstenen concreter!
+                        <BibMedaille
+                          def={def}
+                          behaald={behaald}
+                          isNieuw={nieuweBadge === def.id}
+                        />
+                        <div
+                          style={{
+                            fontSize: 10.5,
+                            textAlign: "center",
+                            color: behaald ? BIB.antraciet : BIB.antracietSoft,
+                            fontWeight: behaald ? 600 : 400,
+                            fontFamily: BIB.tekst,
+                            lineHeight: 1.3,
+                            maxWidth: 82,
+                          }}
+                        >
+                          {def.titel}
+                        </div>
                       </div>
                     );
-                  })()}
+                  })}
                 </div>
               </div>
             </>
@@ -1037,7 +1058,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
               flex: 1,
               overflow: "auto",
               padding: "18px 20px",
-              background: BIB.wit,
+              background: BIB.koel,
             }}
           >
             <div
@@ -1063,9 +1084,12 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                       height: 28,
                       borderRadius: 99,
                       flexShrink: 0,
-                      background: b.van === "bot" ? BIB.beige : BIB.wit,
-                      border: b.van === "ik" ? `1.5px solid ${BIB.antraciet}` : "none",
-                      color: BIB.antraciet,
+                      background: b.van === "bot" ? BIB.antraciet : BIB.wit,
+                      border:
+                        b.van === "ik"
+                          ? `1.5px solid ${BIB.antraciet}`
+                          : "none",
+                      color: b.van === "bot" ? BIB.wit : BIB.antraciet,
                       display: "grid",
                       placeItems: "center",
                     }}
@@ -1074,6 +1098,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                       name={b.van === "bot" ? "chat" : "user"}
                       size={13}
                       stroke={1.8}
+                      color={b.van === "bot" ? BIB.wit : BIB.antraciet}
                     />
                   </div>
                   <div
@@ -1083,17 +1108,17 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                         b.van === "bot"
                           ? b.isError
                             ? "#fdebe5"
-                            : BIB.beige
-                          : BIB.wit,
-                      color: BIB.antraciet,
+                            : BIB.wit
+                          : BIB.antraciet,
+                      color: b.van === "ik" ? BIB.wit : BIB.antraciet,
                       padding: "10px 13px",
                       borderRadius: 6,
                       border:
                         b.van === "ik"
-                          ? `1.5px solid ${BIB.antraciet}`
+                          ? "none"
                           : b.isError
                             ? `1px solid ${BIB.vaag}60`
-                            : "none",
+                            : `1px solid ${BIB.bubbelRand}`,
                       fontSize: 13.5,
                       lineHeight: 1.55,
                       whiteSpace: "pre-wrap",
@@ -1141,17 +1166,18 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                       width: 28,
                       height: 28,
                       borderRadius: 99,
-                      background: BIB.beige,
+                      background: BIB.antraciet,
                       display: "grid",
                       placeItems: "center",
                     }}
                   >
-                    <BibIcon name="chat" size={13} stroke={1.8} />
+                    <BibIcon name="chat" size={13} stroke={1.8} color={BIB.wit} />
                   </div>
                   <div
                     style={{
                       padding: "12px 14px",
-                      background: BIB.beige,
+                      background: BIB.wit,
+                      border: `1px solid ${BIB.bubbelRand}`,
                       borderRadius: 6,
                       display: "flex",
                       gap: 5,
@@ -1180,7 +1206,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
             style={{
               padding: "10px 20px 14px",
               borderTop: `1px solid ${BIB.line}`,
-              background: BIB.wit,
+              background: BIB.koel,
             }}
           >
             <div
@@ -1581,7 +1607,7 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                         style={{
                           padding: "3px 10px",
                           borderRadius: 99,
-                          background: gevuld ? BIB.beige : "transparent",
+                          background: gevuld ? BIB.wit : "transparent",
                           border: `1px solid ${gevuld ? BIB.antraciet : BIB.line}`,
                           color: gevuld ? BIB.antraciet : BIB.antracietSoft,
                           fontSize: 11,
