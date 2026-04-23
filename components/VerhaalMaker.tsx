@@ -102,6 +102,15 @@ export function VerhaalMaker({
   const [tipOpen, setTipOpen] = React.useState<number | null>(null);
   const [badgesOpen, setBadgesOpen] = React.useState(false);
   const [bekekenBouwsteen, setBekekenBouwsteen] = React.useState<number | null>(null);
+  const [samenvatPopup, setSamenvatPopup] = React.useState<
+    | null
+    | {
+        bouwsteenNr: number;
+        tekst: string;
+        laden: boolean;
+        fout?: string;
+      }
+  >(null);
   const [verdiendeBadges, setVerdiendeBadges] = React.useState<Set<BadgeId>>(
     () => new Set(),
   );
@@ -366,6 +375,63 @@ export function VerhaalMaker({
     await verstuur(selectie, vraagTekst);
   };
 
+  const openSamenvat = async () => {
+    setSamenvatPopup({
+      bouwsteenNr: stap + 1,
+      tekst: "",
+      laden: true,
+    });
+    try {
+      const res = await fetch("/api/samenvat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          berichten: berichten
+            .slice(-10)
+            .map((b) => ({ van: b.van, tekst: b.tekst })),
+          bouwstenen,
+          modelId,
+        }),
+      });
+      if (!res.ok) {
+        setSamenvatPopup({
+          bouwsteenNr: stap + 1,
+          tekst: "",
+          laden: false,
+          fout: "De coach kon geen samenvatting maken. Probeer het zo opnieuw.",
+        });
+        return;
+      }
+      const data = await res.json();
+      setSamenvatPopup({
+        bouwsteenNr: data.bouwsteenNr,
+        tekst: data.tekst,
+        laden: false,
+      });
+    } catch {
+      setSamenvatPopup({
+        bouwsteenNr: stap + 1,
+        tekst: "",
+        laden: false,
+        fout: "De coach kon geen samenvatting maken. Probeer het zo opnieuw.",
+      });
+    }
+  };
+
+  const slaSamenvatOp = (mode: "nieuw" | "overschrijf" | "aanvul") => {
+    if (!samenvatPopup || !samenvatPopup.tekst.trim()) return;
+    const nr = samenvatPopup.bouwsteenNr;
+    const huidig = (bouwstenen[String(nr)] || "").trim();
+    let nieuwe = samenvatPopup.tekst.trim();
+    if (mode === "aanvul" && huidig) {
+      nieuwe = `${huidig} ${nieuwe}`.trim();
+    }
+    setBouwstenen({ ...bouwstenen, [String(nr)]: nieuwe });
+    setStap(nr - 1);
+    setSamenvatPopup(null);
+    if (isMobile) setMobielTab("werkvlak");
+  };
+
   const aantalBadges = verdiendeBadges.size;
   const heroTitel =
     aantalBadges === 0
@@ -448,6 +514,392 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
           }}
         />
       )}
+
+      {samenvatPopup && (() => {
+        const nr = samenvatPopup.bouwsteenNr;
+        const stapDef = stappen.find((s) => s.n === nr);
+        const bestaand = (bouwstenen[String(nr)] || "").trim();
+        return (
+          <div
+            role="dialog"
+            aria-modal="true"
+            onClick={() => setSamenvatPopup(null)}
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 70,
+              background: "rgba(57,55,58,0.55)",
+              backdropFilter: "blur(4px)",
+              display: "grid",
+              placeItems: "center",
+              fontFamily: BIB.tekst,
+              padding: 20,
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: BIB.wit,
+                borderRadius: 6,
+                width: "min(520px, 100%)",
+                padding: "24px 26px 22px",
+                boxShadow: "0 24px 60px rgba(57,55,58,0.3)",
+                position: "relative",
+              }}
+            >
+              <button
+                onClick={() => setSamenvatPopup(null)}
+                aria-label="Sluiten"
+                style={{
+                  position: "absolute",
+                  top: 12,
+                  right: 12,
+                  width: 28,
+                  height: 28,
+                  borderRadius: 99,
+                  border: "none",
+                  background: BIB.beige,
+                  color: BIB.antraciet,
+                  fontSize: 16,
+                  cursor: "pointer",
+                  fontFamily: BIB.tekst,
+                  lineHeight: 1,
+                }}
+              >
+                ×
+              </button>
+
+              <div
+                style={{
+                  fontFamily: BIB.kop,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: 1.2,
+                  textTransform: "uppercase",
+                  color: BIB.antracietSoft,
+                  marginBottom: 4,
+                }}
+              >
+                Zet in bouwsteen
+              </div>
+              <div
+                style={{
+                  fontFamily: BIB.kop,
+                  fontSize: 20,
+                  fontWeight: 600,
+                  color: BIB.antraciet,
+                  letterSpacing: -0.2,
+                  marginBottom: 14,
+                }}
+              >
+                Samenvatting voor je werkblad
+              </div>
+
+              {samenvatPopup.laden ? (
+                <div
+                  style={{
+                    padding: "24px 0",
+                    textAlign: "center",
+                    color: BIB.antracietSoft,
+                    fontSize: 13,
+                    fontStyle: "italic",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      gap: 5,
+                      marginBottom: 8,
+                    }}
+                  >
+                    {[0, 1, 2].map((i) => (
+                      <span
+                        key={i}
+                        style={{
+                          width: 7,
+                          height: 7,
+                          borderRadius: 99,
+                          background: BIB.antraciet,
+                          animation: `bibBounce 1.2s ${i * 0.15}s infinite`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <div>Een samenvatting maken…</div>
+                </div>
+              ) : samenvatPopup.fout ? (
+                <div
+                  style={{
+                    padding: "14px 16px",
+                    background: "#fdebe5",
+                    border: `1px solid ${BIB.vaag}60`,
+                    borderRadius: 6,
+                    color: BIB.antraciet,
+                    fontSize: 13,
+                    lineHeight: 1.5,
+                    marginBottom: 14,
+                  }}
+                >
+                  {samenvatPopup.fout}
+                  <div style={{ marginTop: 10 }}>
+                    <button
+                      onClick={openSamenvat}
+                      style={{
+                        padding: "6px 12px",
+                        borderRadius: 4,
+                        border: `1px solid ${BIB.vaag}`,
+                        background: BIB.wit,
+                        color: BIB.vaag,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        fontFamily: BIB.tekst,
+                      }}
+                    >
+                      ↻ Opnieuw proberen
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <label
+                    style={{
+                      display: "block",
+                      fontFamily: BIB.kop,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      letterSpacing: 0.4,
+                      color: BIB.antraciet,
+                      marginBottom: 6,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Welke bouwsteen?
+                  </label>
+                  <select
+                    value={nr}
+                    onChange={(e) =>
+                      setSamenvatPopup({
+                        ...samenvatPopup,
+                        bouwsteenNr: Number(e.target.value),
+                      })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: 4,
+                      border: `1.5px solid ${BIB.line}`,
+                      background: BIB.wit,
+                      color: BIB.antraciet,
+                      fontSize: isMobile ? 16 : 14,
+                      fontFamily: BIB.tekst,
+                      marginBottom: 14,
+                      outline: "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {stappen.map((s) => (
+                      <option key={s.n} value={s.n}>
+                        {s.n}. {s.titel}
+                        {(bouwstenen[String(s.n)] || "").trim()
+                          ? " (heeft al tekst)"
+                          : ""}
+                      </option>
+                    ))}
+                  </select>
+
+                  {stapDef && (
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: BIB.antracietSoft,
+                        fontStyle: "italic",
+                        marginBottom: 10,
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      {stapDef.hint}
+                    </div>
+                  )}
+
+                  <label
+                    style={{
+                      display: "block",
+                      fontFamily: BIB.kop,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      letterSpacing: 0.4,
+                      color: BIB.antraciet,
+                      marginBottom: 6,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Wat komt er in?
+                  </label>
+                  <textarea
+                    value={samenvatPopup.tekst}
+                    onChange={(e) =>
+                      setSamenvatPopup({
+                        ...samenvatPopup,
+                        tekst: e.target.value,
+                      })
+                    }
+                    rows={3}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: 4,
+                      border: `1.5px solid ${BIB.line}`,
+                      background: BIB.wit,
+                      color: BIB.antraciet,
+                      fontSize: isMobile ? 16 : 14,
+                      lineHeight: 1.55,
+                      fontFamily: BIB.tekst,
+                      outline: "none",
+                      resize: "vertical",
+                      boxSizing: "border-box",
+                      marginBottom: bestaand ? 14 : 6,
+                    }}
+                  />
+
+                  {bestaand && (
+                    <div
+                      style={{
+                        padding: "10px 12px",
+                        background: BIB.beigeSoft,
+                        borderRadius: 4,
+                        marginBottom: 14,
+                        fontSize: 12,
+                        color: BIB.antracietSoft,
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontWeight: 700,
+                          marginBottom: 3,
+                          color: BIB.antraciet,
+                          textTransform: "uppercase",
+                          fontSize: 10,
+                          letterSpacing: 0.4,
+                          fontFamily: BIB.kop,
+                        }}
+                      >
+                        Deze bouwsteen heeft al tekst
+                      </div>
+                      &ldquo;{bestaand}&rdquo;
+                    </div>
+                  )}
+                </>
+              )}
+
+              {!samenvatPopup.laden && !samenvatPopup.fout && (
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    marginTop: 8,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  {bestaand ? (
+                    <>
+                      <button
+                        onClick={() => slaSamenvatOp("overschrijf")}
+                        disabled={!samenvatPopup.tekst.trim()}
+                        style={{
+                          flex: 1,
+                          padding: "11px 14px",
+                          borderRadius: 4,
+                          border: "none",
+                          background: samenvatPopup.tekst.trim()
+                            ? BIB.antraciet
+                            : BIB.beigeSoft,
+                          color: samenvatPopup.tekst.trim()
+                            ? BIB.wit
+                            : BIB.antracietSoft,
+                          fontSize: 13,
+                          fontWeight: 700,
+                          cursor: samenvatPopup.tekst.trim()
+                            ? "pointer"
+                            : "not-allowed",
+                          fontFamily: BIB.tekst,
+                          minWidth: 140,
+                        }}
+                      >
+                        Overschrijven
+                      </button>
+                      <button
+                        onClick={() => slaSamenvatOp("aanvul")}
+                        disabled={!samenvatPopup.tekst.trim()}
+                        style={{
+                          flex: 1,
+                          padding: "11px 14px",
+                          borderRadius: 4,
+                          border: `1.5px solid ${BIB.antraciet}`,
+                          background: BIB.wit,
+                          color: BIB.antraciet,
+                          fontSize: 13,
+                          fontWeight: 700,
+                          cursor: samenvatPopup.tekst.trim()
+                            ? "pointer"
+                            : "not-allowed",
+                          fontFamily: BIB.tekst,
+                          minWidth: 140,
+                          opacity: samenvatPopup.tekst.trim() ? 1 : 0.5,
+                        }}
+                      >
+                        Aanvullen
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => slaSamenvatOp("nieuw")}
+                      disabled={!samenvatPopup.tekst.trim()}
+                      style={{
+                        flex: 1,
+                        padding: "11px 14px",
+                        borderRadius: 4,
+                        border: "none",
+                        background: samenvatPopup.tekst.trim()
+                          ? BIB.antraciet
+                          : BIB.beigeSoft,
+                        color: samenvatPopup.tekst.trim()
+                          ? BIB.wit
+                          : BIB.antracietSoft,
+                        fontSize: 13,
+                        fontWeight: 700,
+                        cursor: samenvatPopup.tekst.trim()
+                          ? "pointer"
+                          : "not-allowed",
+                        fontFamily: BIB.tekst,
+                      }}
+                    >
+                      Opslaan in bouwsteen
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setSamenvatPopup(null)}
+                    style={{
+                      padding: "11px 14px",
+                      borderRadius: 4,
+                      border: `1px solid ${BIB.line}`,
+                      background: "transparent",
+                      color: BIB.antracietSoft,
+                      fontSize: 13,
+                      fontWeight: 500,
+                      cursor: "pointer",
+                      fontFamily: BIB.tekst,
+                    }}
+                  >
+                    Annuleren
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {bekekenBouwsteen !== null && (() => {
         const s = stappen.find((s) => s.n === bekekenBouwsteen);
@@ -1271,6 +1723,35 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                           b.modelId}
                       </div>
                     )}
+                    {fase === 1 &&
+                      b.van === "bot" &&
+                      !b.isError &&
+                      b.tekst.trim().length > 20 && (
+                        <button
+                          onClick={openSamenvat}
+                          disabled={samenvatPopup?.laden}
+                          style={{
+                            marginTop: 8,
+                            padding: "5px 10px",
+                            borderRadius: 4,
+                            border: `1px solid ${BIB.antraciet}`,
+                            background: BIB.wit,
+                            color: BIB.antraciet,
+                            fontSize: 11.5,
+                            fontWeight: 700,
+                            cursor: samenvatPopup?.laden
+                              ? "progress"
+                              : "pointer",
+                            fontFamily: BIB.tekst,
+                            letterSpacing: 0.2,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 6,
+                          }}
+                        >
+                          ↗ Gebruik voor een bouwsteen
+                        </button>
+                      )}
                     {b.isError && laatsteVraag && (
                       <button
                         onClick={() => {
