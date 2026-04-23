@@ -17,6 +17,7 @@ type Body = {
   verhaalTekst?: string;
   selectie?: string;
   modelId?: string;
+  modelGewisseld?: boolean;
 };
 
 async function loadPrompt(fase: 1 | 2, vars: Record<string, string>) {
@@ -150,8 +151,16 @@ export async function POST(req: NextRequest) {
     return new Response("Ongeldig verzoek.", { status: 400 });
   }
 
-  const { fase, tone, bouwstenen, vraag, verhaalTekst, selectie, modelId } =
-    body;
+  const {
+    fase,
+    tone,
+    bouwstenen,
+    vraag,
+    verhaalTekst,
+    selectie,
+    modelId,
+    modelGewisseld,
+  } = body;
 
   if (![1, 2].includes(fase) || !vraag?.trim()) {
     return new Response("Ongeldig verzoek.", { status: 400 });
@@ -174,10 +183,14 @@ export async function POST(req: NextRequest) {
 
   const system = await loadPrompt(fase, { tone: tone ?? "rustig, duidelijk, positief" });
 
+  const wisselNoot = modelGewisseld
+    ? `[systeem-noot: sinds het vorige antwoord is de leerling gewisseld naar een ander AI-model. Je hebt de eerdere chat niet bij de hand. Erken dit kort in je antwoord.]\n\n`
+    : "";
+
   const user =
     fase === 1
-      ? `Huidige bouwstenen:\n${ctx || "(nog leeg)"}\n\nLeerling: "${vraag}"`
-      : `Bouwstenen:\n${ctx || "(nog leeg)"}\n\nVerhaal tot nu toe:\n"${(verhaalTekst ?? "").slice(0, 2000)}"\n${
+      ? `${wisselNoot}Huidige bouwstenen:\n${ctx || "(nog leeg)"}\n\nLeerling: "${vraag}"`
+      : `${wisselNoot}Bouwstenen:\n${ctx || "(nog leeg)"}\n\nVerhaal tot nu toe:\n"${(verhaalTekst ?? "").slice(0, 2000)}"\n${
           selectie ? `\nGeselecteerde zin: "${selectie}"\n` : ""
         }\nLeerling: "${vraag}"`;
 

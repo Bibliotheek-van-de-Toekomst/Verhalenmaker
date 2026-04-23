@@ -139,6 +139,7 @@ export function VerhaalMaker({
 
   const [modellen, setModellen] = React.useState<BeschikbaarModel[]>([]);
   const [modelId, setModelId] = React.useState<string | null>(null);
+  const vorigGebruiktModel = React.useRef<string | null>(null);
 
   React.useEffect(() => {
     const saved = loadLS();
@@ -278,6 +279,10 @@ export function VerhaalMaker({
     setLaatsteVraag({ vraag, extraContext });
     setBezig(true);
     try {
+      const modelGewisseld =
+        vorigGebruiktModel.current !== null &&
+        modelId !== null &&
+        vorigGebruiktModel.current !== modelId;
       const res = await fetch("/api/coach", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -289,11 +294,13 @@ export function VerhaalMaker({
           verhaalTekst: fase === 2 ? verhaalTekst : undefined,
           selectie: extraContext,
           modelId,
+          modelGewisseld,
         }),
       });
       if (!res.ok || !res.body) throw new Error("coach faalt");
 
       const modelGebruikt = res.headers.get("X-Model") ?? modelId ?? undefined;
+      if (modelGebruikt) vorigGebruiktModel.current = modelGebruikt;
       const botIndex = await new Promise<number>((resolve) => {
         setBerichten((b) => {
           const next = [
