@@ -11,30 +11,15 @@ export type ModelConfig = {
 
 // Alleen goedkope, niet-reasoning modellen — geschikt voor een schoolworkshop.
 // Geen Sonnet/Opus, geen GPT-5, geen Gemini Pro, geen Mistral Large.
+// Eerste item is de default als STANDAARD_MODEL env var niet is gezet.
 export const ALLE_MODELLEN: ModelConfig[] = [
-  {
-    id: "claude-haiku-4-5",
-    label: "Claude Haiku 4.5",
-    provider: "anthropic",
-    modelId: "claude-haiku-4-5",
-    envKey: "ANTHROPIC_API_KEY",
-    beschrijving: "Snel en goedkoop. Aanbevolen standaard voor de workshop.",
-  },
-  {
-    id: "gpt-4-1-mini",
-    label: "GPT-4.1 mini",
-    provider: "openai",
-    modelId: "gpt-4.1-mini",
-    envKey: "OPENAI_API_KEY",
-    beschrijving: "OpenAI's goedkope mini-model. Goede Nederlandse output.",
-  },
   {
     id: "mistral-small",
     label: "Mistral Small",
     provider: "mistral",
     modelId: "mistral-small-latest",
     envKey: "MISTRAL_API_KEY",
-    beschrijving: "Europees, goedkoop, OpenAI-compatibel formaat.",
+    beschrijving: "Europees, goedkoop. Aanbevolen standaard voor de workshop.",
   },
   {
     id: "ministral-8b",
@@ -43,6 +28,22 @@ export const ALLE_MODELLEN: ModelConfig[] = [
     modelId: "ministral-8b-latest",
     envKey: "MISTRAL_API_KEY",
     beschrijving: "Nog goedkoper alternatief van Mistral.",
+  },
+  {
+    id: "claude-haiku-4-5",
+    label: "Claude Haiku 4.5",
+    provider: "anthropic",
+    modelId: "claude-haiku-4-5",
+    envKey: "ANTHROPIC_API_KEY",
+    beschrijving: "Snel en sterk in Nederlands; iets duurder dan Mistral.",
+  },
+  {
+    id: "gpt-4-1-mini",
+    label: "GPT-4.1 mini",
+    provider: "openai",
+    modelId: "gpt-4.1-mini",
+    envKey: "OPENAI_API_KEY",
+    beschrijving: "OpenAI's goedkope mini-model. Goede Nederlandse output.",
   },
 ];
 

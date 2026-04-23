@@ -24,6 +24,7 @@ type Bericht = {
   tekst: string;
   fase?: 1 | 2;
   isError?: boolean;
+  modelId?: string;
 };
 
 type Leerling = { naam: string; klas: string };
@@ -292,9 +293,13 @@ export function VerhaalMaker({
       });
       if (!res.ok || !res.body) throw new Error("coach faalt");
 
+      const modelGebruikt = res.headers.get("X-Model") ?? modelId ?? undefined;
       const botIndex = await new Promise<number>((resolve) => {
         setBerichten((b) => {
-          const next = [...b, { van: "bot" as const, tekst: "" }];
+          const next = [
+            ...b,
+            { van: "bot" as const, tekst: "", modelId: modelGebruikt },
+          ];
           resolve(next.length - 1);
           return next;
         });
@@ -309,7 +314,7 @@ export function VerhaalMaker({
         acc += dec.decode(value, { stream: true });
         setBerichten((b) => {
           const copy = [...b];
-          copy[botIndex] = { van: "bot", tekst: acc };
+          copy[botIndex] = { van: "bot", tekst: acc, modelId: modelGebruikt };
           return copy;
         });
       }
@@ -320,6 +325,7 @@ export function VerhaalMaker({
             van: "bot",
             isError: true,
             tekst: "Ik kreeg geen antwoord. Probeer het opnieuw.",
+            modelId: modelGebruikt,
           };
           return copy;
         });
@@ -1241,6 +1247,22 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
                       ) : (
                         <React.Fragment key={k}>{s}</React.Fragment>
                       ),
+                    )}
+                    {b.van === "bot" && b.modelId && !b.isError && (
+                      <div
+                        style={{
+                          marginTop: 6,
+                          fontSize: 10,
+                          color: BIB.antracietSoft,
+                          fontFamily: BIB.tekst,
+                          letterSpacing: 0.2,
+                          fontStyle: "italic",
+                        }}
+                      >
+                        via{" "}
+                        {modellen.find((m) => m.id === b.modelId)?.label ??
+                          b.modelId}
+                      </div>
                     )}
                     {b.isError && laatsteVraag && (
                       <button
