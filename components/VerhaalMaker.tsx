@@ -451,11 +451,29 @@ export function VerhaalMaker({
     : 0;
   const auteurNaam = auteur || leerling.naam;
 
+  const htmlEscape = (s: string) =>
+    s
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
   const exporteerWord = () => {
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${verhaalTitel}</title></head>
+    const titelEsc = htmlEscape(verhaalTitel);
+    const auteurEsc = htmlEscape(auteurNaam);
+    const klasEsc = htmlEscape(leerling.klas);
+    const paragrafen = verhaalTekst
+      .split("\n\n")
+      .map(
+        (p) =>
+          `<p>${htmlEscape(p).replace(/\n/g, "<br>")}</p>`,
+      )
+      .join("\n");
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${titelEsc}</title></head>
 <body style="font-family: Arial, sans-serif; max-width: 680px; margin: 40px auto; line-height: 1.7; color: ${BIB.antraciet};">
-<h1 style="font-family: Georgia, serif;">${verhaalTitel}</h1>${auteurNaam ? `<p style="color:#6a6870;font-style:italic;">door ${auteurNaam}${leerling.klas ? ` · ${leerling.klas}` : ""}</p>` : ""}
-${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).join("\n")}
+<h1 style="font-family: Georgia, serif;">${titelEsc}</h1>${auteurEsc ? `<p style="color:#6a6870;font-style:italic;">door ${auteurEsc}${klasEsc ? ` · ${klasEsc}` : ""}</p>` : ""}
+${paragrafen}
 </body></html>`;
     const blob = new Blob(["\ufeff" + html], { type: "application/msword" });
     const a = document.createElement("a");
@@ -467,10 +485,20 @@ ${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).jo
   const exporteerPdf = () => {
     const w = window.open("", "_blank");
     if (!w) return alert("Sta pop-ups toe om te printen als PDF.");
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${verhaalTitel}</title>
+    const titelEsc = htmlEscape(verhaalTitel);
+    const auteurEsc = htmlEscape(auteurNaam);
+    const klasEsc = htmlEscape(leerling.klas);
+    const paragrafen = verhaalTekst
+      .split("\n\n")
+      .map(
+        (p) =>
+          `<p>${htmlEscape(p).replace(/\n/g, "<br>")}</p>`,
+      )
+      .join("\n");
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${titelEsc}</title>
 <style>body{font-family:Arial,sans-serif;max-width:680px;margin:40px auto;line-height:1.7;color:${BIB.antraciet};padding:20px}h1{font-family:Georgia,serif;font-size:28px;margin-bottom:4px}.a{color:#6a6870;font-style:italic;margin-bottom:28px}p{margin:0 0 14px}@media print{body{margin:0}}</style></head>
-<body><h1>${verhaalTitel}</h1>${auteurNaam ? `<div class="a">door ${auteurNaam}${leerling.klas ? ` · ${leerling.klas}` : ""}</div>` : ""}
-${verhaalTekst.split("\n\n").map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).join("\n")}
+<body><h1>${titelEsc}</h1>${auteurEsc ? `<div class="a">door ${auteurEsc}${klasEsc ? ` · ${klasEsc}` : ""}</div>` : ""}
+${paragrafen}
 <script>setTimeout(()=>window.print(),300);<\/script></body></html>`);
     w.document.close();
   };

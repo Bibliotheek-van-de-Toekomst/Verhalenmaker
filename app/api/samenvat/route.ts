@@ -7,6 +7,13 @@ import {
   standaardModel,
   type ModelConfig,
 } from "@/lib/providers";
+import {
+  MAX_LENGTHS,
+  clean,
+  escapeQuotes,
+  tooLong,
+  isAllowedOrigin,
+} from "@/lib/invoer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -93,11 +100,38 @@ async function callModel(
 }
 
 export async function POST(req: NextRequest) {
+  const origin = req.headers.get("origin");
+  if (!isAllowedOrigin(origin)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   let body: Body;
   try {
     body = (await req.json()) as Body;
   } catch {
     return NextResponse.json({ error: "Ongeldig verzoek." }, { status: 400 });
+  }
+
+  if (
+    body.bouwstenen &&
+    Object.values(body.bouwstenen).some((v) =>
+      tooLong(v, MAX_LENGTHS.bouwsteen),
+    )
+  ) {
+    return NextResponse.json(
+      { error: "Bouwsteen te lang." },
+      { status: 400 },
+    );
+  }
+  if (
+    body.berichten &&
+    (body.berichten.length > 30 ||
+      body.berichten.some((m) => tooLong(m.tekst, MAX_LENGTHS.berichtTekst)))
+  ) {
+    return NextResponse.json(
+      { error: "Bericht te lang." },
+      { status: 400 },
+    );
   }
 
   const model =
@@ -110,15 +144,23 @@ export async function POST(req: NextRequest) {
   }
 
   const bouwstenenCtx = BOUWSTEEN_LIJST.map((b) => {
-    const huidig = body.bouwstenen?.[String(b.n)]?.trim();
+    const huidig = clean(
+      body.bouwstenen?.[String(b.n)],
+      MAX_LENGTHS.bouwsteen,
+    ).trim();
     return `${b.n}. ${b.titel} (${b.hint})${
-      huidig ? ` — huidig: "${huidig}"` : " — (nog leeg)"
+      huidig ? ` — huidig: "${escapeQuotes(huidig)}"` : " — (nog leeg)"
     }`;
   }).join("\n");
 
   const gesprek = (body.berichten || [])
     .slice(-10)
-    .map((m) => `${m.van === "ik" ? "Leerling" : "Coach"}: ${m.tekst}`)
+    .map(
+      (m) =>
+        `${m.van === "ik" ? "Leerling" : "Coach"}: ${escapeQuotes(
+          clean(m.tekst, MAX_LENGTHS.berichtTekst),
+        )}`,
+    )
     .join("\n\n");
 
   const system = `Je helpt Nederlandse VO-leerlingen (14-16) hun verhaal-bouwstenen in te vullen op basis van wat er in het coach-gesprek is besproken.
@@ -146,7 +188,7 @@ Vat het idee uit dit gesprek samen voor de best passende bouwsteen.`;
     const start = raw.indexOf("{");
     const end = raw.lastIndexOf("}");
     if (start === -1 || end === -1 || end <= start) {
-      console.error("samenvat: geen JSON gevonden in response", raw);
+      console.error("samenvat: geen JSON gevonden in response");
       return NextResponse.json(
         { error: "Samenvatting niet gelukt." },
         { status: 503 },
@@ -167,7 +209,10 @@ Vat het idee uit dit gesprek samen voor de best passende bouwsteen.`;
     }
     return NextResponse.json({ bouwsteenNr, tekst });
   } catch (err) {
-    console.error("samenvat error", err);
+    console.error(
+      "samenvat error:",
+      err instanceof Error ? err.message : "unknown",
+    );
     return NextResponse.json(
       { error: "Samenvatting niet gelukt." },
       { status: 503 },

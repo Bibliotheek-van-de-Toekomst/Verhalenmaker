@@ -162,6 +162,20 @@ export function BibOnboarding({ leerling, onStart }: Props) {
             >
               Begrepen, verder →
             </button>
+            <p
+              style={{
+                margin: "14px 0 0",
+                fontSize: 11.5,
+                color: BIB.antracietSoft,
+                lineHeight: 1.5,
+                fontFamily: BIB.tekst,
+              }}
+            >
+              <b style={{ color: BIB.antraciet }}>Privacy:</b> wat je schrijft
+              gaat naar de AI-provider om antwoord te genereren. Zet er geen
+              echte persoonsgegevens of gevoelige informatie in. Je verhaal
+              wordt alleen op dit apparaat opgeslagen.
+            </p>
           </>
         ) : (
           <>

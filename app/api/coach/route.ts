@@ -6,6 +6,13 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { vindModel, standaardModel, type ModelConfig } from "@/lib/providers";
 import { BIB_STAPPEN } from "@/lib/stappen";
+import {
+  MAX_LENGTHS,
+  clean,
+  escapeQuotes,
+  tooLong,
+  isAllowedOrigin,
+} from "@/lib/invoer";
 
 export const runtime = "nodejs";
 
@@ -144,6 +151,11 @@ async function streamForModel(
 }
 
 export async function POST(req: NextRequest) {
+  const origin = req.headers.get("origin");
+  if (!isAllowedOrigin(origin)) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
   let body: Body;
   try {
     body = (await req.json()) as Body;
@@ -166,6 +178,21 @@ export async function POST(req: NextRequest) {
     return new Response("Ongeldig verzoek.", { status: 400 });
   }
 
+  if (
+    tooLong(vraag, MAX_LENGTHS.vraag) ||
+    tooLong(selectie, MAX_LENGTHS.selectie) ||
+    tooLong(verhaalTekst, MAX_LENGTHS.verhaalTekst + 500) ||
+    tooLong(tone, MAX_LENGTHS.tone)
+  ) {
+    return new Response("Invoer te lang.", { status: 400 });
+  }
+  if (
+    bouwstenen &&
+    Object.values(bouwstenen).some((v) => tooLong(v, MAX_LENGTHS.bouwsteen))
+  ) {
+    return new Response("Bouwsteen te lang.", { status: 400 });
+  }
+
   const model =
     (modelId ? vindModel(modelId) : null) ?? standaardModel();
 
@@ -176,12 +203,24 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const schoneVraag = escapeQuotes(clean(vraag, MAX_LENGTHS.vraag));
+  const schoneSelectie = selectie
+    ? escapeQuotes(clean(selectie, MAX_LENGTHS.selectie))
+    : "";
+  const schoneVerhaalTekst = clean(verhaalTekst, MAX_LENGTHS.verhaalTekst);
+  const schoneTone = clean(tone, MAX_LENGTHS.tone);
+
   const ctx = Object.entries(bouwstenen || {})
     .filter(([, v]) => v?.trim())
-    .map(([k, v]) => `${labelVoor(+k)}: ${v}`)
+    .map(
+      ([k, v]) =>
+        `${labelVoor(+k)}: ${escapeQuotes(clean(v, MAX_LENGTHS.bouwsteen))}`,
+    )
     .join("\n");
 
-  const system = await loadPrompt(fase, { tone: tone ?? "rustig, duidelijk, positief" });
+  const system = await loadPrompt(fase, {
+    tone: schoneTone || "rustig, duidelijk, positief",
+  });
 
   const wisselNoot = modelGewisseld
     ? `[systeem-noot: sinds het vorige antwoord is de leerling gewisseld naar een ander AI-model. Je hebt de eerdere chat niet bij de hand. Erken dit kort in je antwoord.]\n\n`
@@ -189,10 +228,10 @@ export async function POST(req: NextRequest) {
 
   const user =
     fase === 1
-      ? `${wisselNoot}Huidige bouwstenen:\n${ctx || "(nog leeg)"}\n\nLeerling: "${vraag}"`
-      : `${wisselNoot}Bouwstenen:\n${ctx || "(nog leeg)"}\n\nVerhaal tot nu toe:\n"${(verhaalTekst ?? "").slice(0, 2000)}"\n${
-          selectie ? `\nGeselecteerde zin: "${selectie}"\n` : ""
-        }\nLeerling: "${vraag}"`;
+      ? `${wisselNoot}Huidige bouwstenen:\n${ctx || "(nog leeg)"}\n\nLeerling: "${schoneVraag}"`
+      : `${wisselNoot}Bouwstenen:\n${ctx || "(nog leeg)"}\n\nVerhaal tot nu toe:\n"${schoneVerhaalTekst}"\n${
+          schoneSelectie ? `\nGeselecteerde zin: "${schoneSelectie}"\n` : ""
+        }\nLeerling: "${schoneVraag}"`;
 
   try {
     const stream = await streamForModel(model, system, user);
@@ -203,7 +242,10 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (err) {
-    console.error("coach error", err);
+    console.error(
+      "coach error:",
+      err instanceof Error ? err.message : "unknown",
+    );
     return new Response(
       "Coach is even niet bereikbaar. Probeer het zo opnieuw.",
       { status: 503 },
