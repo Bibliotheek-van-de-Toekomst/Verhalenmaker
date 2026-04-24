@@ -134,6 +134,19 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const leerlingInput = (body.berichten || []).filter(
+    (m) => m.van === "ik" && m.tekst?.trim().length > 0,
+  );
+  if (leerlingInput.length === 0) {
+    return NextResponse.json(
+      {
+        error:
+          "Er is nog geen gesprek om samen te vatten. Stel eerst een vraag aan de coach.",
+      },
+      { status: 400 },
+    );
+  }
+
   const model =
     (body.modelId ? vindModel(body.modelId) : null) ?? standaardModel();
   if (!model) {

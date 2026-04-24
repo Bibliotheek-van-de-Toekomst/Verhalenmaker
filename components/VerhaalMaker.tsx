@@ -394,11 +394,21 @@ export function VerhaalMaker({
         }),
       });
       if (!res.ok) {
+        let foutmelding =
+          "De coach kon geen samenvatting maken. Probeer het zo opnieuw.";
+        try {
+          const data = await res.json();
+          if (typeof data?.error === "string" && data.error.trim()) {
+            foutmelding = data.error;
+          }
+        } catch {
+          // negeer parse-fout, houd generieke melding
+        }
         setSamenvatPopup({
           bouwsteenNr: stap + 1,
           tekst: "",
           laden: false,
-          fout: "De coach kon geen samenvatting maken. Probeer het zo opnieuw.",
+          fout: foutmelding,
         });
         return;
       }
@@ -1754,7 +1764,8 @@ ${paragrafen}
                     {fase === 1 &&
                       b.van === "bot" &&
                       !b.isError &&
-                      b.tekst.trim().length > 20 && (
+                      b.tekst.trim().length > 20 &&
+                      berichten.slice(0, i).some((m) => m.van === "ik") && (
                         <button
                           onClick={openSamenvat}
                           disabled={samenvatPopup?.laden}
