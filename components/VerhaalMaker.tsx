@@ -55,6 +55,27 @@ function saveLS(data: SavedState) {
   } catch {}
 }
 
+const BOUWSTEEN_TAG_REGEX = /\[+\s*bouwsteen\s*:\s*(\d+|geen)\s*\]+/gi;
+
+function parseBouwsteenTag(tekst: string): {
+  tekst: string;
+  bouwsteen: number | "geen" | null;
+} {
+  const matches = [...tekst.matchAll(BOUWSTEEN_TAG_REGEX)];
+  if (matches.length === 0) {
+    return { tekst, bouwsteen: null };
+  }
+  const laatste = matches[matches.length - 1][1].toLowerCase();
+  let bouwsteen: number | "geen" | null = null;
+  if (laatste === "geen") bouwsteen = "geen";
+  else {
+    const n = parseInt(laatste, 10);
+    if (n >= 1 && n <= 6) bouwsteen = n;
+  }
+  const schoon = tekst.replace(BOUWSTEEN_TAG_REGEX, "").trimEnd();
+  return { tekst: schoon, bouwsteen };
+}
+
 function scoreVan(t: string): "vaag" | "goed" | "levendig" | null {
   if (!t || t.length < 10) return null;
   const cijfer = /\d/.test(t),
@@ -1679,7 +1700,18 @@ ${paragrafen}
                 gap: 12,
               }}
             >
-              {berichten.map((b, i) => (
+              {berichten.map((b, i) => {
+                const isBotBericht = b.van === "bot" && !b.isError;
+                const parsed = isBotBericht
+                  ? parseBouwsteenTag(b.tekst)
+                  : { tekst: b.tekst, bouwsteen: null as number | "geen" | null };
+                const zichtbareTekst = parsed.tekst;
+                const toonSamenvatKnop =
+                  isBotBericht &&
+                  typeof parsed.bouwsteen === "number" &&
+                  zichtbareTekst.trim().length > 20 &&
+                  berichten.slice(0, i).some((m) => m.van === "ik");
+                return (
                 <div
                   key={i}
                   className="bib-msg"
@@ -1736,7 +1768,7 @@ ${paragrafen}
                       fontFamily: BIB.tekst,
                     }}
                   >
-                    {b.tekst.split(/(\*\*[^*]+\*\*)/g).map((s, k) =>
+                    {zichtbareTekst.split(/(\*\*[^*]+\*\*)/g).map((s, k) =>
                       s.startsWith("**") && s.endsWith("**") ? (
                         <strong key={k} style={{ fontWeight: 700 }}>
                           {s.slice(2, -2)}
@@ -1761,36 +1793,32 @@ ${paragrafen}
                           b.modelId}
                       </div>
                     )}
-                    {fase === 1 &&
-                      b.van === "bot" &&
-                      !b.isError &&
-                      b.tekst.trim().length > 20 &&
-                      berichten.slice(0, i).some((m) => m.van === "ik") && (
-                        <button
-                          onClick={openSamenvat}
-                          disabled={samenvatPopup?.laden}
-                          style={{
-                            marginTop: 8,
-                            padding: "5px 10px",
-                            borderRadius: 4,
-                            border: `1px solid ${BIB.antraciet}`,
-                            background: BIB.wit,
-                            color: BIB.antraciet,
-                            fontSize: 11.5,
-                            fontWeight: 700,
-                            cursor: samenvatPopup?.laden
-                              ? "progress"
-                              : "pointer",
-                            fontFamily: BIB.tekst,
-                            letterSpacing: 0.2,
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 6,
-                          }}
-                        >
-                          ↗ Gebruik voor een bouwsteen
-                        </button>
-                      )}
+                    {toonSamenvatKnop && (
+                      <button
+                        onClick={openSamenvat}
+                        disabled={samenvatPopup?.laden}
+                        style={{
+                          marginTop: 8,
+                          padding: "5px 10px",
+                          borderRadius: 4,
+                          border: `1px solid ${BIB.antraciet}`,
+                          background: BIB.wit,
+                          color: BIB.antraciet,
+                          fontSize: 11.5,
+                          fontWeight: 700,
+                          cursor: samenvatPopup?.laden
+                            ? "progress"
+                            : "pointer",
+                          fontFamily: BIB.tekst,
+                          letterSpacing: 0.2,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                      >
+                        ↗ Gebruik voor een bouwsteen
+                      </button>
+                    )}
                     {b.isError && laatsteVraag && (
                       <button
                         onClick={() => {
@@ -1815,7 +1843,8 @@ ${paragrafen}
                     )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
               {bezig && (
                 <div style={{ display: "flex", gap: 9 }}>
                   <div
