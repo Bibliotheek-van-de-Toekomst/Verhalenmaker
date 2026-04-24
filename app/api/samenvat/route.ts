@@ -23,6 +23,7 @@ type Body = {
   berichten: Bericht[];
   bouwstenen: Record<string, string>;
   modelId?: string;
+  actieveBouwsteen?: number;
 };
 
 const BOUWSTEEN_LIJST = [
@@ -188,9 +189,16 @@ Regels:
 - Nederlands, passend bij 14-16 jaar.
 - Als de leerling al iets had ingevuld voor die bouwsteen, bouw er op voort in plaats van totaal anders.`;
 
+  const actieveNoot =
+    typeof body.actieveBouwsteen === "number" &&
+    body.actieveBouwsteen >= 1 &&
+    body.actieveBouwsteen <= 6
+      ? `\nDe leerling werkte tijdens dit gesprek actief aan bouwsteen ${body.actieveBouwsteen}. Kies deze tenzij het gesprek duidelijk over een andere bouwsteen ging.\n`
+      : "";
+
   const user = `Bouwstenen:
 ${bouwstenenCtx}
-
+${actieveNoot}
 Gesprek:
 ${gesprek}
 

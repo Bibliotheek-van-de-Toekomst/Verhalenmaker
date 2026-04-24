@@ -325,6 +325,7 @@ export function VerhaalMaker({
           selectie: extraContext,
           modelId,
           modelGewisseld,
+          actieveBouwsteen: fase === 1 ? stap + 1 : undefined,
         }),
       });
       if (!res.ok || !res.body) throw new Error("coach faalt");
@@ -412,6 +413,7 @@ export function VerhaalMaker({
             .map((b) => ({ van: b.van, tekst: b.tekst })),
           bouwstenen,
           modelId,
+          actieveBouwsteen: fase === 1 ? stap + 1 : undefined,
         }),
       });
       if (!res.ok) {
@@ -1706,11 +1708,21 @@ ${paragrafen}
                   ? parseBouwsteenTag(b.tekst)
                   : { tekst: b.tekst, bouwsteen: null as number | "geen" | null };
                 const zichtbareTekst = parsed.tekst;
+                const eerdereTagsZelfdeBouwsteen =
+                  typeof parsed.bouwsteen === "number"
+                    ? berichten.slice(0, i).filter((m) => {
+                        if (m.van !== "bot" || m.isError) return false;
+                        return (
+                          parseBouwsteenTag(m.tekst).bouwsteen ===
+                          parsed.bouwsteen
+                        );
+                      }).length
+                    : 0;
                 const toonSamenvatKnop =
                   isBotBericht &&
                   typeof parsed.bouwsteen === "number" &&
                   zichtbareTekst.trim().length > 20 &&
-                  berichten.slice(0, i).some((m) => m.van === "ik");
+                  eerdereTagsZelfdeBouwsteen >= 1;
                 return (
                 <div
                   key={i}

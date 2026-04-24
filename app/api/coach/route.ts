@@ -25,6 +25,7 @@ type Body = {
   selectie?: string;
   modelId?: string;
   modelGewisseld?: boolean;
+  actieveBouwsteen?: number;
 };
 
 async function loadPrompt(fase: 1 | 2, vars: Record<string, string>) {
@@ -172,6 +173,7 @@ export async function POST(req: NextRequest) {
     selectie,
     modelId,
     modelGewisseld,
+    actieveBouwsteen,
   } = body;
 
   if (![1, 2].includes(fase) || !vraag?.trim()) {
@@ -226,9 +228,19 @@ export async function POST(req: NextRequest) {
     ? `[systeem-noot: sinds het vorige antwoord is de leerling gewisseld naar een ander AI-model. Je hebt de eerdere chat niet bij de hand. Erken dit kort in je antwoord.]\n\n`
     : "";
 
+  const actieveNoot =
+    fase === 1 &&
+    typeof actieveBouwsteen === "number" &&
+    actieveBouwsteen >= 1 &&
+    actieveBouwsteen <= 6
+      ? `De leerling werkt op dit moment aan bouwsteen ${actieveBouwsteen} (${labelVoor(
+          actieveBouwsteen,
+        )}). Als de vraag dubbelzinnig is (bijvoorbeeld alleen "is dit goed?" of "wat kan beter?"), ga ervan uit dat het over deze bouwsteen gaat.\n\n`
+      : "";
+
   const user =
     fase === 1
-      ? `${wisselNoot}Huidige bouwstenen:\n${ctx || "(nog leeg)"}\n\nLeerling: "${schoneVraag}"`
+      ? `${wisselNoot}${actieveNoot}Huidige bouwstenen:\n${ctx || "(nog leeg)"}\n\nLeerling: "${schoneVraag}"`
       : `${wisselNoot}Bouwstenen:\n${ctx || "(nog leeg)"}\n\nVerhaal tot nu toe:\n"${schoneVerhaalTekst}"\n${
           schoneSelectie ? `\nGeselecteerde zin: "${schoneSelectie}"\n` : ""
         }\nLeerling: "${schoneVraag}"`;
