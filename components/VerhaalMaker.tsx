@@ -136,6 +136,9 @@ export function VerhaalMaker({
     () => new Set(),
   );
   const [nieuweBadge, setNieuweBadge] = React.useState<BadgeId | null>(null);
+  const [opslaanFout, setOpslaanFout] = React.useState<string | null>(null);
+  const vorigeFase = React.useRef<number | null>(null);
+  const vorigeWoorden = React.useRef<number | null>(null);
 
   const isMobile = useMediaQuery("(max-width: 767px)");
   const isCompact = useMediaQuery("(max-width: 1023px)");
@@ -209,17 +212,27 @@ export function VerhaalMaker({
 
   React.useEffect(() => {
     if (!hydrated) return;
-    saveLS({
-      fase,
-      stap,
-      bouwstenen,
-      verhaalTitel,
-      verhaalTekst,
-      auteur,
-      leerling,
-      berichten: berichten.slice(-20),
-      verdiendeBadges: Array.from(verdiendeBadges),
-    });
+    try {
+      localStorage.setItem(
+        LS_KEY_BIB,
+        JSON.stringify({
+          fase,
+          stap,
+          bouwstenen,
+          verhaalTitel,
+          verhaalTekst,
+          auteur,
+          leerling,
+          berichten: berichten.slice(-20),
+          verdiendeBadges: Array.from(verdiendeBadges),
+        }),
+      );
+      if (opslaanFout) setOpslaanFout(null);
+    } catch (err) {
+      setOpslaanFout(
+        "Je verhaal kan nu niet lokaal worden opgeslagen. Download meteen een backup om niets te verliezen.",
+      );
+    }
     setLastSave(Date.now());
   }, [
     hydrated,
@@ -232,6 +245,7 @@ export function VerhaalMaker({
     leerling,
     berichten,
     verdiendeBadges,
+    opslaanFout,
   ]);
 
   React.useEffect(() => {
@@ -509,6 +523,88 @@ export function VerhaalMaker({
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
 
+  const downloadBackup = React.useCallback(
+    (reden?: string) => {
+      if (typeof window === "undefined") return;
+      try {
+        const regels: string[] = [];
+        regels.push("=== VERHAALMAKER BACKUP ===");
+        regels.push(
+          `Datum: ${new Date().toLocaleString("nl-NL", {
+            dateStyle: "short",
+            timeStyle: "short",
+          })}`,
+        );
+        if (reden) regels.push(`Moment: ${reden}`);
+        if (leerling.naam)
+          regels.push(
+            `Auteur: ${leerling.naam}${leerling.klas ? ` (${leerling.klas})` : ""}`,
+          );
+        if (verhaalTitel) regels.push(`Titel: ${verhaalTitel}`);
+        regels.push("");
+        regels.push("--- BOUWSTENEN ---");
+        for (const s of stappen) {
+          const v = (bouwstenen[String(s.n)] || "").trim();
+          regels.push("");
+          regels.push(`${s.n}. ${s.titel}`);
+          regels.push(v || "(leeg)");
+        }
+        regels.push("");
+        regels.push("--- VERHAAL ---");
+        regels.push("");
+        regels.push(verhaalTekst.trim() || "(nog geen verhaal geschreven)");
+        const blob = new Blob([regels.join("\n")], {
+          type: "text/plain;charset=utf-8",
+        });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        const schoonNaam = (verhaalTitel || leerling.naam || "verhaal")
+          .replace(/[^\w\- ]+/g, "")
+          .replace(/\s+/g, "-")
+          .slice(0, 40) || "verhaal";
+        const datumPlak = new Date()
+          .toISOString()
+          .slice(0, 16)
+          .replace(/[:T]/g, "-");
+        a.download = `verhaalmaker-${schoonNaam}-${datumPlak}.txt`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+      } catch (err) {
+        console.error("backup-download mislukt", err);
+      }
+    },
+    [bouwstenen, leerling, stappen, verhaalTekst, verhaalTitel],
+  );
+
+  React.useEffect(() => {
+    if (!hydrated) return;
+    if (vorigeFase.current === null) {
+      vorigeFase.current = fase;
+      return;
+    }
+    if (vorigeFase.current === 1 && fase === 2) {
+      downloadBackup("bouwstenen-klaar");
+    }
+    vorigeFase.current = fase;
+  }, [hydrated, fase, downloadBackup]);
+
+  React.useEffect(() => {
+    if (!hydrated) return;
+    const huidig = verhaalTekst.trim()
+      ? verhaalTekst.trim().split(/\s+/).filter(Boolean).length
+      : 0;
+    if (vorigeWoorden.current === null) {
+      vorigeWoorden.current = huidig;
+      return;
+    }
+    for (const mijlpaal of [100, 300]) {
+      if (vorigeWoorden.current < mijlpaal && huidig >= mijlpaal) {
+        downloadBackup(`${mijlpaal}-woorden-bereikt`);
+      }
+    }
+    vorigeWoorden.current = huidig;
+  }, [hydrated, verhaalTekst, downloadBackup]);
+
   const exporteerWord = () => {
     const titelEsc = htmlEscape(verhaalTitel);
     const auteurEsc = htmlEscape(auteurNaam);
@@ -571,7 +667,13 @@ ${paragrafen}
         fontSize: 14,
         lineHeight: 1.5,
         display: "grid",
-        gridTemplateRows: isMobile ? "auto auto auto 1fr" : "auto auto 1fr",
+        gridTemplateRows: opslaanFout
+          ? isMobile
+            ? "auto auto auto auto 1fr"
+            : "auto auto auto 1fr"
+          : isMobile
+            ? "auto auto auto 1fr"
+            : "auto auto 1fr",
         overflow: "hidden",
         position: "relative",
       }}
@@ -1156,16 +1258,67 @@ ${paragrafen}
           onPdf={exporteerPdf}
           onMail={mailVerhaal}
           onReset={() => {
-            if (
-              confirm(
-                "Weet je zeker dat je opnieuw wilt beginnen? Je huidige verhaal wordt gewist.",
-              )
-            ) {
-              localStorage.removeItem(LS_KEY_BIB);
-              location.reload();
+            const wilBackup = confirm(
+              "Je gaat een nieuw verhaal beginnen — je huidige verhaal wordt ONHERROEPELIJK gewist.\n\nDruk OK om eerst een backup te downloaden (.txt-bestand).\nDruk Annuleren om zonder backup verder te gaan.",
+            );
+            if (wilBackup) {
+              downloadBackup("voor-reset");
+            } else {
+              if (
+                !confirm(
+                  "Zonder backup verder? Je verhaal wordt definitief weggegooid.",
+                )
+              ) {
+                return;
+              }
             }
+            if (
+              !confirm("Nu echt je verhaal wissen en opnieuw beginnen?")
+            ) {
+              return;
+            }
+            localStorage.removeItem(LS_KEY_BIB);
+            location.reload();
           }}
         />
+      )}
+
+      {opslaanFout && (
+        <div
+          role="alert"
+          style={{
+            background: "#fdebe5",
+            borderBottom: `2px solid ${BIB.vaag}`,
+            padding: "10px 16px",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            fontFamily: BIB.tekst,
+            fontSize: 13,
+            color: BIB.antraciet,
+            lineHeight: 1.4,
+          }}
+        >
+          <span aria-hidden style={{ color: BIB.vaag, fontWeight: 900 }}>⚠</span>
+          <span style={{ flex: 1 }}>{opslaanFout}</span>
+          <button
+            onClick={() => downloadBackup("opslaan-fout")}
+            style={{
+              padding: "6px 12px",
+              borderRadius: 4,
+              border: `1px solid ${BIB.vaag}`,
+              background: BIB.wit,
+              color: BIB.vaag,
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: "pointer",
+              fontFamily: BIB.tekst,
+              whiteSpace: "nowrap",
+            }}
+          >
+            ⤓ Download nu
+          </button>
+        </div>
       )}
 
       {/* TOP BAR */}
@@ -2452,16 +2605,26 @@ ${paragrafen}
                   <b style={{ color: BIB.antraciet }}>{woordenTelling}</b> woorden
                 </span>
                 <span>·</span>
-                <span>Doel: 300–600 woorden (1–2 pagina&apos;s)</span>
-                <span
+                <span>Doel: 300–600 woorden</span>
+                <button
+                  onClick={() => downloadBackup("handmatig")}
+                  title="Download een tekstbestand met al je bouwstenen en je verhaal"
                   style={{
                     marginLeft: "auto",
+                    padding: "4px 10px",
+                    borderRadius: 4,
+                    border: `1px solid ${BIB.line}`,
+                    background: BIB.wit,
+                    color: BIB.antraciet,
                     fontSize: 11,
-                    fontStyle: "italic",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    fontFamily: BIB.tekst,
+                    letterSpacing: 0.2,
                   }}
                 >
-                  Markeer een zin voor gerichte feedback
-                </span>
+                  ⤓ Download backup
+                </button>
               </div>
               {selectie && fase === 2 && (
                 <div
