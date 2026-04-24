@@ -37,6 +37,8 @@ export function isAllowedOrigin(origin: string | null): boolean {
     const host = url.host.toLowerCase();
     return (
       host.endsWith(".vercel.app") ||
+      host.endsWith(".brainportbibliotheken.nl") ||
+      host === "brainportbibliotheken.nl" ||
       host === "localhost:3000" ||
       host === "localhost" ||
       host === "127.0.0.1:3000" ||
