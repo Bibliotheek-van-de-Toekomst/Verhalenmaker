@@ -328,6 +328,23 @@ export function VerhaalMaker({
           actieveBouwsteen: fase === 1 ? stap + 1 : undefined,
         }),
       });
+      if (res.status === 429) {
+        const rlTekst = await res.text().catch(
+          () => "Je hebt even te veel verzoeken gedaan. Probeer het zo opnieuw.",
+        );
+        setBerichten((b) => [
+          ...b,
+          {
+            van: "bot",
+            isError: true,
+            tekst:
+              rlTekst ||
+              "Je hebt even te veel verzoeken gedaan. Probeer het zo opnieuw.",
+          },
+        ]);
+        setBezig(false);
+        return;
+      }
       if (!res.ok || !res.body) throw new Error("coach faalt");
 
       const modelGebruikt = res.headers.get("X-Model") ?? modelId ?? undefined;

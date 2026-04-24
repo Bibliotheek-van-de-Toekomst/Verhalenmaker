@@ -14,6 +14,7 @@ import {
   tooLong,
   isAllowedOrigin,
 } from "@/lib/invoer";
+import { checkRateLimit, rateLimitFoutmelding } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -104,6 +105,16 @@ export async function POST(req: NextRequest) {
   const origin = req.headers.get("origin");
   if (!isAllowedOrigin(origin)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const rl = await checkRateLimit(req);
+  if (!rl.ok) {
+    const resp = NextResponse.json(
+      { error: rateLimitFoutmelding(rl.reden, rl.resetInSec) },
+      { status: 429, headers: { "Retry-After": String(rl.resetInSec) } },
+    );
+    if (rl.cookieToSet) resp.headers.set("Set-Cookie", rl.cookieToSet);
+    return resp;
   }
 
   let body: Body;
@@ -228,7 +239,9 @@ Vat het idee uit dit gesprek samen voor de best passende bouwsteen.`;
         { status: 503 },
       );
     }
-    return NextResponse.json({ bouwsteenNr, tekst });
+    const resp = NextResponse.json({ bouwsteenNr, tekst });
+    if (rl.cookieToSet) resp.headers.set("Set-Cookie", rl.cookieToSet);
+    return resp;
   } catch (err) {
     console.error(
       "samenvat error:",

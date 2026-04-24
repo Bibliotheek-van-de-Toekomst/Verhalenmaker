@@ -13,6 +13,7 @@ import {
   tooLong,
   isAllowedOrigin,
 } from "@/lib/invoer";
+import { checkRateLimit, rateLimitFoutmelding } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 
@@ -157,6 +158,19 @@ export async function POST(req: NextRequest) {
     return new Response("Forbidden", { status: 403 });
   }
 
+  const rl = await checkRateLimit(req);
+  if (!rl.ok) {
+    const headers: Record<string, string> = {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Retry-After": String(rl.resetInSec),
+    };
+    if (rl.cookieToSet) headers["Set-Cookie"] = rl.cookieToSet;
+    return new Response(rateLimitFoutmelding(rl.reden, rl.resetInSec), {
+      status: 429,
+      headers,
+    });
+  }
+
   let body: Body;
   try {
     body = (await req.json()) as Body;
@@ -247,12 +261,12 @@ export async function POST(req: NextRequest) {
 
   try {
     const stream = await streamForModel(model, system, user);
-    return new Response(stream, {
-      headers: {
-        "Content-Type": "text/plain; charset=utf-8",
-        "X-Model": model.id,
-      },
-    });
+    const headers: Record<string, string> = {
+      "Content-Type": "text/plain; charset=utf-8",
+      "X-Model": model.id,
+    };
+    if (rl.cookieToSet) headers["Set-Cookie"] = rl.cookieToSet;
+    return new Response(stream, { headers });
   } catch (err) {
     console.error(
       "coach error:",
