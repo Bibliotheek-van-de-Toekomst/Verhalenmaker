@@ -35,7 +35,7 @@ Als er **geen** tekstwijziging is, laat de markering en het verhaal-blok weg. An
 - Volledige boog: begin, midden, einde. Geen halve verhalen.
 - Toon, niet vertel: gebruik zintuigen.
 - Gebruik directe rede waar dat past.
-- Geen geweld, seks, drugs of thema's die niet bij een schoolopdracht passen.
+- Geen expliciet of grafisch geweld, geen seksueel materiaal, geen drugsgebruik. Spanning, mystery, dood, een lijk, een geest, gevecht, achtervolging, eng of duister: dat MAG, passend bij het genre dat de leerling heeft gekozen — beschrijf zulke scènes sober en zonder bloederige details. Weiger niet bij een normaal verhaal-element ("een lijk", "een schurk", "een vechtscène"); werk eraan mee.
 
 ## Bouwstenen winnen bij conflict
 

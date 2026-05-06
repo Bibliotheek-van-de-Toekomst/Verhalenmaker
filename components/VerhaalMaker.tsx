@@ -92,17 +92,34 @@ function parseWisselTag(tekst: string): {
 
 const VERHAAL_MARKER_REGEX = /^[ \t]*={3,}\s*VERHAAL\s*={3,}[ \t]*$/im;
 
+function schoonVerhaal(raw: string): string {
+  let s = raw.trim();
+  s = s.replace(/^```[a-zA-Z]*\s*\n?/, "");
+  s = s.replace(/\n?```\s*$/, "");
+  s = s.replace(/^={3,}\s*EINDE\s*={3,}\s*$/im, "");
+  return s.trim();
+}
+
 function parseVerhaalBlok(tekst: string): {
   uitleg: string;
   verhaal: string | null;
 } {
+  const uitlegBijUitval = tekst.replace(/```\s*$/g, "").trimEnd();
   const m = tekst.match(VERHAAL_MARKER_REGEX);
   if (!m || m.index === undefined) {
     return { uitleg: tekst, verhaal: null };
   }
-  const uitleg = tekst.slice(0, m.index).trimEnd();
-  const verhaal = tekst.slice(m.index + m[0].length).trim();
-  return { uitleg, verhaal: verhaal.length > 0 ? verhaal : null };
+  let uitleg = tekst.slice(0, m.index).trimEnd();
+  uitleg = uitleg.replace(/```\s*$/g, "").trimEnd();
+  const ruwVerhaal = tekst.slice(m.index + m[0].length);
+  const verhaal = schoonVerhaal(ruwVerhaal);
+  // Een geldig verhaal heeft tenminste enkele woorden — anders is het waarschijnlijk
+  // een lege marker of alleen markdown-fences. Toon dan geen plaats-knop.
+  const isEcht = verhaal.length >= 30 && /\s/.test(verhaal);
+  return {
+    uitleg: isEcht ? uitleg : uitlegBijUitval,
+    verhaal: isEcht ? verhaal : null,
+  };
 }
 
 function scoreVan(t: string): "vaag" | "goed" | "levendig" | null {

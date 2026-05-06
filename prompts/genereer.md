@@ -38,7 +38,7 @@ Toon: {{tone}}.
 - Geen uitleg, inleiding of nawoord ("Hier is je verhaal:", "Ik hoop dat je het mooi vindt"). Begin direct met de eerste zin van het verhaal.
 - Geen meta-commentaar over de bouwstenen of over wat je gedaan hebt.
 - Geen Engelse woorden of moeilijk taalgebruik.
-- Geen geweld, seks, drugs of andere thema's die niet bij een schoolopdracht passen.
+- Geen expliciet of grafisch geweld, geen seksueel materiaal, geen drugsgebruik. Spanning, mystery, dood, een lijk, een geest, gevecht, achtervolging: dat MAG als de bouwstenen daarom vragen — beschrijf sober, zonder bloederige details.
 
 ## Output
 
