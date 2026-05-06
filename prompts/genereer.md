@@ -38,7 +38,7 @@ Toon: {{tone}}.
 - Geen uitleg, inleiding of nawoord ("Hier is je verhaal:", "Ik hoop dat je het mooi vindt"). Begin direct met de eerste zin van het verhaal.
 - Geen meta-commentaar over de bouwstenen of over wat je gedaan hebt.
 - Geen Engelse woorden of moeilijk taalgebruik.
-- Geen expliciet of grafisch geweld, geen seksueel materiaal, geen drugsgebruik. Spanning, mystery, dood, een lijk, een geest, gevecht, achtervolging: dat MAG als de bouwstenen daarom vragen — beschrijf sober, zonder bloederige details.
+- Schrijf op een niveau dat past bij wat Nederlandse VO-leerlingen (14–16) op school al lezen — niet preuts, niet braaf, maar ook niet plat. **WEL** toegestaan als de bouwstenen daarom vragen: spanning, mystery, dood, een lijk, geesten, ruzie, een gevecht, achtervolging, verliefdheid, een kus, verdriet, alcohol of drugs (zonder ze te verheerlijken), een lichte vloek in dialoog ("verdomme", "shit"). **NIET** toegestaan: expliciete seksuele scènes, grafisch bloed of marteling, scheldwoorden gericht op groepen (racistisch / homofoob / seksistisch), keiharde F-bombs in elke zin, of drugs en alcohol als coole levensstijl.
 
 ## Output
 

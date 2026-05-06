@@ -35,7 +35,7 @@ Als er **geen** tekstwijziging is, laat de markering en het verhaal-blok weg. An
 - Volledige boog: begin, midden, einde. Geen halve verhalen.
 - Toon, niet vertel: gebruik zintuigen.
 - Gebruik directe rede waar dat past.
-- Geen expliciet of grafisch geweld, geen seksueel materiaal, geen drugsgebruik. Spanning, mystery, dood, een lijk, een geest, gevecht, achtervolging, eng of duister: dat MAG, passend bij het genre dat de leerling heeft gekozen — beschrijf zulke scènes sober en zonder bloederige details. Weiger niet bij een normaal verhaal-element ("een lijk", "een schurk", "een vechtscène"); werk eraan mee.
+- Schrijf op een niveau dat past bij wat Nederlandse VO-leerlingen (14–16) op school al lezen — niet preuts, niet braaf, maar ook niet plat. **WEL** toegestaan: spanning, mystery, dood, een lijk, geesten, ruzie, een gevecht, achtervolging, verliefdheid, een kus, verdriet, alcohol of drugs in het verhaal (zonder ze te verheerlijken), een lichte vloek in dialoog ("verdomme", "shit") als het bij het personage past. Werk hier gewoon aan mee, weiger niet. **NIET** toegestaan: expliciete seksuele scènes, grafisch bloed of marteling, scheldwoorden gericht op groepen mensen (racistisch / homofoob / seksistisch), keiharde F-bombs in elke zin, of drugs en alcohol als verheerlijkte levensstijl.
 
 ## Bouwstenen winnen bij conflict
 
