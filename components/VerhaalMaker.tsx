@@ -3062,6 +3062,13 @@ ${paragrafen}
                       border: `1px solid ${BIB.line}`,
                       borderRadius: 6,
                       padding: isMobile ? "14px 16px" : "18px 22px",
+                      paddingBottom: selectie
+                        ? isMobile
+                          ? 90
+                          : 80
+                        : isMobile
+                          ? 14
+                          : 18,
                       fontSize: isMobile ? 16 : 14.5,
                       lineHeight: 1.75,
                       fontFamily: BIB.tekst,
@@ -3070,6 +3077,7 @@ ${paragrafen}
                       resize: "none",
                       boxSizing: "border-box",
                       overflow: "auto",
+                      transition: "padding-bottom 0.15s",
                     }}
                   />
                 )}
