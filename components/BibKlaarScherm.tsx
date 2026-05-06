@@ -6,12 +6,16 @@ import { BibLogo } from "./BibLogo";
 import { BibIcon, type IconName } from "./BibIcon";
 import { BibMedaille } from "./BibMedaille";
 import { BADGES, type BadgeId } from "@/lib/badges";
+import { BIB_STAPPEN } from "@/lib/stappen";
+
+const BOEKBOT_URL = "https://Boekbot.nl";
 
 type Props = {
   titel: string;
   tekst: string;
   auteur: string;
   klas: string;
+  bouwstenen: Record<string, string>;
   verdiendeBadges: Set<BadgeId>;
   onDicht: () => void;
   onWord: () => void;
@@ -19,6 +23,31 @@ type Props = {
   onMail: () => void;
   onReset: () => void;
 };
+
+function bouwBoekbotPrompt(
+  bouwstenen: Record<string, string>,
+  titel: string,
+): string {
+  const regels: string[] = [];
+  regels.push(
+    "Ik heb zelf een kort verhaal geschreven met de bouwstenen hieronder. Welk boek voor jongeren (14–16 jaar) past hier goed bij?",
+  );
+  regels.push("");
+  if (titel.trim()) {
+    regels.push(`Titel van mijn verhaal: "${titel.trim()}"`);
+    regels.push("");
+  }
+  regels.push("Bouwstenen:");
+  for (const s of BIB_STAPPEN) {
+    const v = (bouwstenen[String(s.n)] || "").trim();
+    if (v) regels.push(`- ${s.titel}: ${v}`);
+  }
+  regels.push("");
+  regels.push(
+    "Geef één tot drie boektips, met per tip een korte uitleg waarom het past.",
+  );
+  return regels.join("\n");
+}
 
 function BibActieKnop({
   icon,
@@ -63,6 +92,7 @@ export function BibKlaarScherm({
   tekst,
   auteur,
   klas,
+  bouwstenen,
   verdiendeBadges,
   onDicht,
   onWord,
@@ -72,6 +102,23 @@ export function BibKlaarScherm({
 }: Props) {
   const aantalBadges = verdiendeBadges.size;
   const woorden = tekst.trim() ? tekst.trim().split(/\s+/).filter(Boolean).length : 0;
+  const [boekbotOpen, setBoekbotOpen] = React.useState(false);
+  const [gekopieerd, setGekopieerd] = React.useState(false);
+  const boekbotPrompt = React.useMemo(
+    () => bouwBoekbotPrompt(bouwstenen, titel),
+    [bouwstenen, titel],
+  );
+
+  const kopieerPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(boekbotPrompt);
+      setGekopieerd(true);
+      setTimeout(() => setGekopieerd(false), 2000);
+    } catch {
+      setGekopieerd(false);
+      alert("Kopiëren is niet gelukt. Selecteer de tekst en kopieer handmatig.");
+    }
+  };
   return (
     <div
       role="dialog"
@@ -277,6 +324,142 @@ export function BibKlaarScherm({
               );
             })}
           </div>
+        </div>
+
+        <div
+          style={{
+            background: BIB.beige,
+            borderRadius: 6,
+            padding: "16px 20px",
+            marginBottom: 18,
+          }}
+        >
+          <div
+            style={{
+              fontFamily: BIB.kop,
+              fontSize: 16,
+              fontWeight: 600,
+              color: BIB.antraciet,
+              letterSpacing: -0.1,
+              marginBottom: 4,
+            }}
+          >
+            Bestaat er al zo'n verhaal?
+          </div>
+          <div
+            style={{
+              fontSize: 12.5,
+              color: BIB.antracietSoft,
+              lineHeight: 1.55,
+              marginBottom: boekbotOpen ? 12 : 12,
+            }}
+          >
+            Maak een prompt voor <b>Boekbot</b> en ontdek welk bestaand boek bij
+            jouw verhaal past.
+          </div>
+
+          {!boekbotOpen ? (
+            <button
+              onClick={() => setBoekbotOpen(true)}
+              style={{
+                padding: "10px 16px",
+                borderRadius: 4,
+                border: `1.5px solid ${BIB.antraciet}`,
+                background: BIB.antraciet,
+                color: BIB.wit,
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: "pointer",
+                fontFamily: BIB.tekst,
+                letterSpacing: 0.2,
+              }}
+            >
+              Maak Boekbot-prompt
+            </button>
+          ) : (
+            <>
+              <textarea
+                value={boekbotPrompt}
+                readOnly
+                onFocus={(e) => e.currentTarget.select()}
+                rows={8}
+                style={{
+                  width: "100%",
+                  background: BIB.wit,
+                  border: `1px solid ${BIB.line}`,
+                  borderRadius: 4,
+                  padding: "10px 12px",
+                  fontSize: 12.5,
+                  fontFamily: BIB.tekst,
+                  color: BIB.antraciet,
+                  outline: "none",
+                  resize: "vertical",
+                  lineHeight: 1.55,
+                  boxSizing: "border-box",
+                  marginBottom: 10,
+                }}
+              />
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button
+                  onClick={kopieerPrompt}
+                  style={{
+                    padding: "8px 14px",
+                    borderRadius: 4,
+                    border: `1.5px solid ${BIB.antraciet}`,
+                    background: gekopieerd ? BIB.levendig : BIB.antraciet,
+                    color: BIB.wit,
+                    fontSize: 12.5,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    fontFamily: BIB.tekst,
+                    letterSpacing: 0.2,
+                  }}
+                >
+                  {gekopieerd ? "✓ Gekopieerd" : "Kopieer prompt"}
+                </button>
+                <a
+                  href={BOEKBOT_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    padding: "8px 14px",
+                    borderRadius: 4,
+                    border: `1.5px solid ${BIB.antraciet}`,
+                    background: BIB.wit,
+                    color: BIB.antraciet,
+                    fontSize: 12.5,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    fontFamily: BIB.tekst,
+                    letterSpacing: 0.2,
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  Open Boekbot →
+                </a>
+                <button
+                  onClick={() => setBoekbotOpen(false)}
+                  style={{
+                    marginLeft: "auto",
+                    padding: "8px 12px",
+                    borderRadius: 4,
+                    border: "none",
+                    background: "transparent",
+                    color: BIB.antracietSoft,
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    fontFamily: BIB.tekst,
+                  }}
+                >
+                  Sluiten
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
         <div

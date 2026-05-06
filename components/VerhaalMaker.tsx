@@ -174,6 +174,12 @@ export function VerhaalMaker({
   const [modelId, setModelId] = React.useState<string | null>(null);
   const vorigGebruiktModel = React.useRef<string | null>(null);
 
+  const [verhaalKeuze, setVerhaalKeuze] = React.useState<
+    "zelf" | "ai" | null
+  >(null);
+  const [genereerBezig, setGenereerBezig] = React.useState(false);
+  const [genereerFout, setGenereerFout] = React.useState<string | null>(null);
+
   React.useEffect(() => {
     const saved = loadLS();
     if (saved.fase) setFase(saved.fase);
@@ -268,6 +274,7 @@ export function VerhaalMaker({
     (v) => v && v.trim().length >= 10,
   ).length;
   const klaarVoorSchrijven = gevuldAantal >= 4;
+  const alleBouwstenenVol = gevuldAantal === stappen.length;
 
   React.useEffect(() => {
     if (fase === 2 && !berichten.some((b) => b.fase === 2)) {
@@ -411,6 +418,62 @@ export function VerhaalMaker({
       ]);
     }
     setBezig(false);
+  };
+
+  const genereerVerhaal = async () => {
+    if (genereerBezig || !alleBouwstenenVol) return;
+    setGenereerFout(null);
+    setGenereerBezig(true);
+    setVerhaalKeuze("ai");
+    setVerhaalTekst("");
+    if (isMobile) setMobielTab("werkvlak");
+    try {
+      const res = await fetch("/api/genereer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tone, bouwstenen, modelId }),
+      });
+      if (res.status === 429) {
+        const tekst = await res
+          .text()
+          .catch(
+            () => "Even te veel verzoeken. Probeer het over een paar minuten opnieuw.",
+          );
+        setGenereerFout(
+          tekst ||
+            "Even te veel verzoeken. Probeer het over een paar minuten opnieuw.",
+        );
+        return;
+      }
+      if (!res.ok || !res.body) {
+        const tekst = await res.text().catch(() => "");
+        throw new Error(tekst || "genereer faalt");
+      }
+      const modelGebruikt = res.headers.get("X-Model") ?? modelId ?? undefined;
+      if (modelGebruikt) vorigGebruiktModel.current = modelGebruikt;
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let acc = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        acc += dec.decode(value, { stream: true });
+        setVerhaalTekst(acc);
+      }
+      if (!acc.trim()) {
+        setGenereerFout(
+          "Het AI-model gaf geen tekst terug. Probeer het opnieuw of kies een ander model.",
+        );
+      }
+    } catch (err) {
+      const melding =
+        err instanceof Error && err.message
+          ? err.message
+          : "Het is niet gelukt om een verhaal te maken. Probeer het zo opnieuw.";
+      setGenereerFout(melding);
+    } finally {
+      setGenereerBezig(false);
+    }
   };
 
   const [selectie, setSelectie] = React.useState("");
@@ -1252,6 +1315,7 @@ ${paragrafen}
           tekst={verhaalTekst}
           auteur={auteurNaam}
           klas={leerling.klas}
+          bouwstenen={bouwstenen}
           verdiendeBadges={berekenBadgeIds(bouwstenen, verhaalTekst)}
           onDicht={() => setKlaar(false)}
           onWord={exporteerWord}
@@ -2561,33 +2625,249 @@ ${paragrafen}
                   padding: "6px 20px 10px",
                   minHeight: 0,
                   display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
                 }}
               >
-                <textarea
-                  value={verhaalTekst}
-                  onChange={(e) => setVerhaalTekst(e.target.value)}
-                  placeholder={
-                    isMobile
-                      ? "Begin hier met schrijven. Tik op een zin en vraag feedback via de Coach-tab."
-                      : "Begin hier met schrijven. Markeer een zin en vraag links om feedback."
-                  }
-                  style={{
-                    width: "100%",
-                    flex: 1,
-                    background: BIB.wit,
-                    border: `1px solid ${BIB.line}`,
-                    borderRadius: 6,
-                    padding: isMobile ? "14px 16px" : "18px 22px",
-                    fontSize: isMobile ? 16 : 14.5,
-                    lineHeight: 1.75,
-                    fontFamily: BIB.tekst,
-                    color: BIB.antraciet,
-                    outline: "none",
-                    resize: "none",
-                    boxSizing: "border-box",
-                    overflow: "auto",
-                  }}
-                />
+                {genereerFout && (
+                  <div
+                    role="alert"
+                    style={{
+                      padding: "10px 14px",
+                      background: "#fdebe5",
+                      border: `1px solid ${BIB.vaag}60`,
+                      borderRadius: 6,
+                      color: BIB.antraciet,
+                      fontSize: 12.5,
+                      lineHeight: 1.5,
+                      display: "flex",
+                      gap: 10,
+                      alignItems: "flex-start",
+                    }}
+                  >
+                    <span style={{ flex: 1 }}>{genereerFout}</span>
+                    <button
+                      onClick={() => setGenereerFout(null)}
+                      aria-label="Sluiten"
+                      style={{
+                        border: "none",
+                        background: "transparent",
+                        color: BIB.antracietSoft,
+                        fontSize: 14,
+                        cursor: "pointer",
+                        fontFamily: BIB.tekst,
+                        padding: 0,
+                        lineHeight: 1,
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+                {verhaalKeuze === null && !verhaalTekst.trim() && !genereerBezig ? (
+                  <div
+                    style={{
+                      flex: 1,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 14,
+                      padding: isMobile ? "10px 0" : "20px 0",
+                    }}
+                  >
+                    <div
+                      style={{
+                        background: BIB.wit,
+                        border: `1px solid ${BIB.line}`,
+                        borderRadius: 6,
+                        padding: isMobile ? "18px 18px" : "24px 26px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontFamily: BIB.kop,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          letterSpacing: 1.2,
+                          textTransform: "uppercase",
+                          color: BIB.antracietSoft,
+                          marginBottom: 6,
+                        }}
+                      >
+                        Hoe wil je beginnen?
+                      </div>
+                      <div
+                        style={{
+                          fontFamily: BIB.kop,
+                          fontSize: 20,
+                          fontWeight: 600,
+                          color: BIB.antraciet,
+                          letterSpacing: -0.2,
+                          marginBottom: 14,
+                        }}
+                      >
+                        Schrijf je verhaal zelf, of laat de AI het schrijven
+                      </div>
+
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+                          gap: 12,
+                        }}
+                      >
+                        <button
+                          onClick={() => setVerhaalKeuze("zelf")}
+                          style={{
+                            textAlign: "left",
+                            padding: "14px 16px",
+                            borderRadius: 6,
+                            border: `1.5px solid ${BIB.antraciet}`,
+                            background: BIB.antraciet,
+                            color: BIB.wit,
+                            cursor: "pointer",
+                            fontFamily: BIB.tekst,
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontFamily: BIB.kop,
+                              fontSize: 15,
+                              fontWeight: 600,
+                              marginBottom: 4,
+                            }}
+                          >
+                            Zelf schrijven
+                          </div>
+                          <div
+                            style={{
+                              fontSize: 12,
+                              opacity: 0.85,
+                              lineHeight: 1.5,
+                            }}
+                          >
+                            Jij schrijft, de coach helpt je aanscherpen.
+                          </div>
+                        </button>
+
+                        <button
+                          onClick={genereerVerhaal}
+                          disabled={!alleBouwstenenVol || genereerBezig}
+                          title={
+                            alleBouwstenenVol
+                              ? "Laat de AI een eerste versie schrijven op basis van jouw bouwstenen"
+                              : `Vul eerst alle ${stappen.length} bouwstenen in`
+                          }
+                          style={{
+                            textAlign: "left",
+                            padding: "14px 16px",
+                            borderRadius: 6,
+                            border: `1.5px solid ${
+                              alleBouwstenenVol ? BIB.antraciet : BIB.line
+                            }`,
+                            background: alleBouwstenenVol
+                              ? BIB.wit
+                              : BIB.beigeSoft,
+                            color: alleBouwstenenVol
+                              ? BIB.antraciet
+                              : BIB.antracietSoft,
+                            cursor: alleBouwstenenVol
+                              ? "pointer"
+                              : "not-allowed",
+                            fontFamily: BIB.tekst,
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontFamily: BIB.kop,
+                              fontSize: 15,
+                              fontWeight: 600,
+                              marginBottom: 4,
+                            }}
+                          >
+                            Laat AI het verhaal schrijven
+                          </div>
+                          <div
+                            style={{
+                              fontSize: 12,
+                              lineHeight: 1.5,
+                              opacity: alleBouwstenenVol ? 0.85 : 1,
+                            }}
+                          >
+                            {alleBouwstenenVol
+                              ? "Een korte versie op basis van jouw zes bouwstenen."
+                              : `Beschikbaar zodra alle ${stappen.length} bouwstenen ingevuld zijn (nu ${gevuldAantal}/${stappen.length}).`}
+                          </div>
+                        </button>
+                      </div>
+
+                      <div
+                        style={{
+                          marginTop: 14,
+                          padding: "10px 12px",
+                          background: BIB.beige,
+                          borderRadius: 4,
+                          fontSize: 12,
+                          color: BIB.antraciet,
+                          lineHeight: 1.55,
+                        }}
+                      >
+                        <b style={{ fontFamily: BIB.kop, letterSpacing: 0.3 }}>
+                          Tip:
+                        </b>{" "}
+                        kies ook eens een ander taalmodel om het verhaal te
+                        genereren — het resultaat kan flink verschillen.
+                        Wisselen kan rechtsboven via het knopje{" "}
+                        <span
+                          style={{
+                            display: "inline-block",
+                            padding: "1px 8px",
+                            borderRadius: 99,
+                            background: BIB.antraciet,
+                            color: BIB.wit,
+                            fontSize: 10.5,
+                            letterSpacing: 0.3,
+                            verticalAlign: "1px",
+                          }}
+                        >
+                          AI: …
+                        </span>{" "}
+                        in de zwarte balk bovenaan.
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <textarea
+                    value={verhaalTekst}
+                    onChange={(e) => {
+                      setVerhaalTekst(e.target.value);
+                      if (verhaalKeuze === null) setVerhaalKeuze("zelf");
+                    }}
+                    readOnly={genereerBezig}
+                    placeholder={
+                      genereerBezig
+                        ? "Even geduld — de AI schrijft je verhaal…"
+                        : isMobile
+                          ? "Begin hier met schrijven. Tik op een zin en vraag feedback via de Coach-tab."
+                          : "Begin hier met schrijven. Markeer een zin en vraag links om feedback."
+                    }
+                    style={{
+                      width: "100%",
+                      flex: 1,
+                      background: BIB.wit,
+                      border: `1px solid ${BIB.line}`,
+                      borderRadius: 6,
+                      padding: isMobile ? "14px 16px" : "18px 22px",
+                      fontSize: isMobile ? 16 : 14.5,
+                      lineHeight: 1.75,
+                      fontFamily: BIB.tekst,
+                      color: BIB.antraciet,
+                      outline: "none",
+                      resize: "none",
+                      boxSizing: "border-box",
+                      overflow: "auto",
+                    }}
+                  />
+                )}
               </div>
               <div
                 style={{
