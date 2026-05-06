@@ -13,7 +13,6 @@ type Props = {
 
 export function BibOnboarding({ leerling, onStart }: Props) {
   const [naam, setNaam] = React.useState(leerling?.naam || "");
-  const [klas, setKlas] = React.useState(leerling?.klas || "");
   const [step, setStep] = React.useState(0);
   const kan = naam.trim().length >= 2;
 
@@ -67,8 +66,10 @@ export function BibOnboarding({ leerling, onStart }: Props) {
                 fontFamily: BIB.tekst,
               }}
             >
-              Jij gaat een kort verhaal schrijven. De AI is je{" "}
-              <b style={{ color: BIB.antraciet }}>coach</b> — geen ghostwriter.
+              Jij gaat een kort verhaal maken. De AI helpt je — als{" "}
+              <b style={{ color: BIB.antraciet }}>coach</b> bij je eigen tekst,
+              of als <b style={{ color: BIB.antraciet }}>schrijver</b> die een
+              eerste versie voor je maakt. Jij kiest.
             </p>
             <div
               style={{
@@ -80,12 +81,12 @@ export function BibOnboarding({ leerling, onStart }: Props) {
             >
               {[
                 {
-                  t: "Jij schrijft het verhaal",
-                  s: "De AI schrijft geen hele zinnen voor je.",
+                  t: "Jij maakt het verhaal",
+                  s: "Schrijf zelf, of laat de AI een eerste versie maken die je daarna nog aanpast.",
                 },
                 {
                   t: "De AI geeft ideeën en tips",
-                  s: 'Bijvoorbeeld: "deze zin is vaag" of "voeg een geluid toe".',
+                  s: 'Bijvoorbeeld: "deze zin is vaag" of "maak het einde spannender".',
                 },
                 {
                   t: "Jij bepaalt",
@@ -217,7 +218,7 @@ export function BibOnboarding({ leerling, onStart }: Props) {
                 value={naam}
                 onChange={(e) => setNaam(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && kan) onStart(naam.trim(), klas.trim());
+                  if (e.key === "Enter" && kan) onStart(naam.trim(), "");
                 }}
                 placeholder="bijv. Mira"
                 style={{
@@ -231,47 +232,12 @@ export function BibOnboarding({ leerling, onStart }: Props) {
                   fontSize: 16,
                   fontFamily: BIB.tekst,
                   outline: "none",
-                }}
-              />
-            </label>
-            <label style={{ display: "block", marginBottom: 22 }}>
-              <div
-                style={{
-                  fontFamily: BIB.kop,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: BIB.antraciet,
-                  marginBottom: 5,
-                }}
-              >
-                Klas{" "}
-                <span style={{ color: BIB.antracietSoft, fontWeight: 400 }}>
-                  (optioneel)
-                </span>
-              </div>
-              <input
-                value={klas}
-                onChange={(e) => setKlas(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && kan) onStart(naam.trim(), klas.trim());
-                }}
-                placeholder="bijv. 3A"
-                style={{
-                  width: "100%",
-                  boxSizing: "border-box",
-                  padding: "12px 14px",
-                  borderRadius: 4,
-                  border: `1.5px solid ${BIB.line}`,
-                  background: BIB.wit,
-                  color: BIB.antraciet,
-                  fontSize: 16,
-                  fontFamily: BIB.tekst,
-                  outline: "none",
+                  marginBottom: 22,
                 }}
               />
             </label>
             <button
-              onClick={() => kan && onStart(naam.trim(), klas.trim())}
+              onClick={() => kan && onStart(naam.trim(), "")}
               disabled={!kan}
               style={{
                 width: "100%",

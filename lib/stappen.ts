@@ -14,9 +14,9 @@ export const BIB_STAPPEN: Bouwsteen[] = [
   },
   {
     n: 2,
-    titel: "Setting",
-    hint: "Waar en wanneer speelt het verhaal? Wat voor sfeer hangt er?",
-    voorbeeld: "Een Zeeuws dorp in de herfst. Mistig en heel stil.",
+    titel: "Plek & sfeer",
+    hint: "Waar speelt het, wanneer, en wat voor gevoel hangt er?",
+    voorbeeld: "Een verlaten skatepark om middernacht. Nat asfalt, sirenes in de verte.",
   },
   {
     n: 3,
@@ -55,7 +55,7 @@ export const BOUWSTEEN_ICON: Record<number, string> = {
 
 export const WAAROM: Record<number, string> = {
   1: "Een personage heeft een naam, een leeftijd, een kracht én een zwakte. Die zwakte maakt het verhaal spannend.",
-  2: "Setting is meer dan alleen een plek. Tijd, weer en geluid maken het beeld levendig.",
+  2: "Plek, tijd én sfeer maken je verhaal levendig — een schoolaula op vrijdagmiddag voelt heel anders dan een lege parkeergarage 's nachts.",
   3: "Zonder duidelijk doel weet je lezer niet waar het verhaal heen gaat. Schrijf op wat je personage wil.",
   4: "Conflict is wat in de weg staat. Zonder tegenstand geen spanning.",
   5: "Begin, midden, einde — in drie korte zinnen. Dan heeft je verhaal een duidelijke richting.",

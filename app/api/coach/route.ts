@@ -17,6 +17,8 @@ import { checkRateLimit, rateLimitFoutmelding } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 
+type Modus = "coach" | "schrijver";
+
 type Body = {
   fase: 1 | 2;
   tone: string;
@@ -27,11 +29,21 @@ type Body = {
   modelId?: string;
   modelGewisseld?: boolean;
   actieveBouwsteen?: number;
+  modus?: Modus;
 };
 
-async function loadPrompt(fase: 1 | 2, vars: Record<string, string>) {
+function promptBestand(fase: 1 | 2, modus: Modus): string {
+  if (fase === 2 && modus === "schrijver") return "fase2-ai.md";
+  return `fase${fase}.md`;
+}
+
+async function loadPrompt(
+  fase: 1 | 2,
+  modus: Modus,
+  vars: Record<string, string>,
+) {
   const raw = await fs.readFile(
-    path.join(process.cwd(), "prompts", `fase${fase}.md`),
+    path.join(process.cwd(), "prompts", promptBestand(fase, modus)),
     "utf-8",
   );
   return Object.entries(vars).reduce(
@@ -48,11 +60,12 @@ async function streamAnthropic(
   model: ModelConfig,
   system: string,
   user: string,
+  maxTokens: number,
 ) {
   const anthropic = new Anthropic({ apiKey: process.env[model.envKey]! });
   const stream = anthropic.messages.stream({
     model: model.modelId,
-    max_tokens: 500,
+    max_tokens: maxTokens,
     system,
     messages: [{ role: "user", content: user }],
   });
@@ -80,11 +93,12 @@ async function streamOpenAI(
   model: ModelConfig,
   system: string,
   user: string,
+  maxTokens: number,
 ) {
   const openai = new OpenAI({ apiKey: process.env[model.envKey]! });
   const stream = await openai.chat.completions.create({
     model: model.modelId,
-    max_tokens: 500,
+    max_tokens: maxTokens,
     stream: true,
     messages: [
       { role: "system", content: system },
@@ -111,11 +125,12 @@ async function streamMistral(
   model: ModelConfig,
   system: string,
   user: string,
+  maxTokens: number,
 ) {
   const client = new Mistral({ apiKey: process.env[model.envKey]! });
   const stream = await client.chat.stream({
     model: model.modelId,
-    maxTokens: 500,
+    maxTokens,
     messages: [
       { role: "system", content: system },
       { role: "user", content: user },
@@ -141,14 +156,15 @@ async function streamForModel(
   model: ModelConfig,
   system: string,
   user: string,
+  maxTokens: number,
 ) {
   switch (model.provider) {
     case "anthropic":
-      return streamAnthropic(model, system, user);
+      return streamAnthropic(model, system, user, maxTokens);
     case "openai":
-      return streamOpenAI(model, system, user);
+      return streamOpenAI(model, system, user, maxTokens);
     case "mistral":
-      return streamMistral(model, system, user);
+      return streamMistral(model, system, user, maxTokens);
   }
 }
 
@@ -188,7 +204,11 @@ export async function POST(req: NextRequest) {
     modelId,
     modelGewisseld,
     actieveBouwsteen,
+    modus: modusRuw,
   } = body;
+
+  const modus: Modus = modusRuw === "schrijver" ? "schrijver" : "coach";
+  const maxTokens = fase === 2 && modus === "schrijver" ? 900 : 500;
 
   if (![1, 2].includes(fase) || !vraag?.trim()) {
     return new Response("Ongeldig verzoek.", { status: 400 });
@@ -234,7 +254,7 @@ export async function POST(req: NextRequest) {
     )
     .join("\n");
 
-  const system = await loadPrompt(fase, {
+  const system = await loadPrompt(fase, modus, {
     tone: schoneTone || "rustig, duidelijk, positief",
   });
 
@@ -260,7 +280,7 @@ export async function POST(req: NextRequest) {
         }\nLeerling: "${schoneVraag}"`;
 
   try {
-    const stream = await streamForModel(model, system, user);
+    const stream = await streamForModel(model, system, user, maxTokens);
     const headers: Record<string, string> = {
       "Content-Type": "text/plain; charset=utf-8",
       "X-Model": model.id,
@@ -268,13 +288,17 @@ export async function POST(req: NextRequest) {
     if (rl.cookieToSet) headers["Set-Cookie"] = rl.cookieToSet;
     return new Response(stream, { headers });
   } catch (err) {
-    console.error(
-      "coach error:",
-      err instanceof Error ? err.message : "unknown",
-    );
-    return new Response(
-      "Coach is even niet bereikbaar. Probeer het zo opnieuw.",
-      { status: 503 },
-    );
+    const msg = err instanceof Error ? err.message : "unknown";
+    console.error("coach error:", msg);
+    const lower = msg.toLowerCase();
+    const isCapaciteit =
+      lower.includes("429") ||
+      lower.includes("capacity") ||
+      lower.includes("rate") ||
+      lower.includes("quota");
+    const tekst = isCapaciteit
+      ? `${model.label} heeft op dit moment geen capaciteit. Wissel rechtsboven via "AI: ${model.label} ▾" naar een ander model (bv. Claude Haiku of GPT-4.1 mini) en probeer opnieuw.`
+      : `Coach (${model.label}) is even niet bereikbaar. Probeer het zo opnieuw, of kies rechtsboven een ander model.`;
+    return new Response(tekst, { status: 503 });
   }
 }

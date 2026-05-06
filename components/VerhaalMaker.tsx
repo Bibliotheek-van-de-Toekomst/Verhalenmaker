@@ -35,7 +35,6 @@ type SavedState = Partial<{
   bouwstenen: Record<string, string>;
   verhaalTitel: string;
   verhaalTekst: string;
-  auteur: string;
   leerling: Leerling;
   berichten: Bericht[];
   verdiendeBadges: string[];
@@ -74,6 +73,36 @@ function parseBouwsteenTag(tekst: string): {
   }
   const schoon = tekst.replace(BOUWSTEEN_TAG_REGEX, "").trimEnd();
   return { tekst: schoon, bouwsteen };
+}
+
+const WISSEL_TAG_REGEX = /\[+\s*wissel\s*:\s*(zelf|ai)\s*\]+/gi;
+
+function parseWisselTag(tekst: string): {
+  tekst: string;
+  wissel: "zelf" | "ai" | null;
+} {
+  const matches = [...tekst.matchAll(WISSEL_TAG_REGEX)];
+  if (matches.length === 0) return { tekst, wissel: null };
+  const laatste = matches[matches.length - 1][1].toLowerCase();
+  const wissel =
+    laatste === "zelf" || laatste === "ai" ? (laatste as "zelf" | "ai") : null;
+  const schoon = tekst.replace(WISSEL_TAG_REGEX, "").trimEnd();
+  return { tekst: schoon, wissel };
+}
+
+const VERHAAL_MARKER_REGEX = /^[ \t]*={3,}\s*VERHAAL\s*={3,}[ \t]*$/im;
+
+function parseVerhaalBlok(tekst: string): {
+  uitleg: string;
+  verhaal: string | null;
+} {
+  const m = tekst.match(VERHAAL_MARKER_REGEX);
+  if (!m || m.index === undefined) {
+    return { uitleg: tekst, verhaal: null };
+  }
+  const uitleg = tekst.slice(0, m.index).trimEnd();
+  const verhaal = tekst.slice(m.index + m[0].length).trim();
+  return { uitleg, verhaal: verhaal.length > 0 ? verhaal : null };
 }
 
 function scoreVan(t: string): "vaag" | "goed" | "levendig" | null {
@@ -137,8 +166,6 @@ export function VerhaalMaker({
   );
   const [nieuweBadge, setNieuweBadge] = React.useState<BadgeId | null>(null);
   const [opslaanFout, setOpslaanFout] = React.useState<string | null>(null);
-  const vorigeFase = React.useRef<number | null>(null);
-  const vorigeWoorden = React.useRef<number | null>(null);
 
   const isMobile = useMediaQuery("(max-width: 767px)");
   const isCompact = useMediaQuery("(max-width: 1023px)");
@@ -158,7 +185,6 @@ export function VerhaalMaker({
   });
   const [verhaalTitel, setVerhaalTitel] = React.useState("");
   const [verhaalTekst, setVerhaalTekst] = React.useState("");
-  const [auteur, setAuteur] = React.useState("");
   const [onboarding, setOnboarding] = React.useState(true);
   const [leerling, setLeerling] = React.useState<Leerling>({ naam: "", klas: "" });
   const [klaar, setKlaar] = React.useState(false);
@@ -187,7 +213,6 @@ export function VerhaalMaker({
     if (saved.bouwstenen) setBouwstenen((b) => ({ ...b, ...saved.bouwstenen }));
     if (saved.verhaalTitel) setVerhaalTitel(saved.verhaalTitel);
     if (saved.verhaalTekst) setVerhaalTekst(saved.verhaalTekst);
-    if (saved.auteur) setAuteur(saved.auteur);
     if (saved.leerling?.naam) {
       setLeerling(saved.leerling);
       setOnboarding(false);
@@ -227,7 +252,6 @@ export function VerhaalMaker({
           bouwstenen,
           verhaalTitel,
           verhaalTekst,
-          auteur,
           leerling,
           berichten: berichten.slice(-20),
           verdiendeBadges: Array.from(verdiendeBadges),
@@ -247,7 +271,6 @@ export function VerhaalMaker({
     bouwstenen,
     verhaalTitel,
     verhaalTekst,
-    auteur,
     leerling,
     berichten,
     verdiendeBadges,
@@ -277,18 +300,15 @@ export function VerhaalMaker({
   const alleBouwstenenVol = gevuldAantal === stappen.length;
 
   React.useEffect(() => {
-    if (fase === 2 && !berichten.some((b) => b.fase === 2)) {
-      setBerichten((b) => [
-        ...b,
-        {
-          van: "bot",
-          fase: 2,
-          tekst:
-            "Mooi, stap 2! Jij schrijft — ik lees mee.\n\nMarkeer een zin en klik op **Feedback op selectie** voor gerichte tips.",
-        },
-      ]);
-    }
-  }, [fase, berichten]);
+    if (fase !== 2) return;
+    if (verhaalKeuze === null) return;
+    if (berichten.some((b) => b.fase === 2)) return;
+    const tekst =
+      verhaalKeuze === "ai"
+        ? "De AI heeft je verhaal geschreven. Vraag hieronder of ze iets moet aanpassen — bijvoorbeeld **maak het langer**, **voeg een spannende scène toe** of **verander het einde**.\n\nKlik bij elk antwoord op **Plaats deze versie in mijn verhaal** om over te nemen."
+        : "Mooi, stap 2! Jij schrijft — ik lees mee.\n\nMarkeer een zin en klik op **Feedback op selectie** voor gerichte tips.";
+    setBerichten((b) => [...b, { van: "bot", fase: 2, tekst }]);
+  }, [fase, verhaalKeuze, berichten]);
 
   React.useEffect(() => {
     if (hydrated && !onboarding && berichten.length === 0 && leerling.naam) {
@@ -334,6 +354,8 @@ export function VerhaalMaker({
         vorigGebruiktModel.current !== null &&
         modelId !== null &&
         vorigGebruiktModel.current !== modelId;
+      const modus =
+        fase === 2 && verhaalKeuze === "ai" ? "schrijver" : "coach";
       const res = await fetch("/api/coach", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -347,6 +369,7 @@ export function VerhaalMaker({
           modelId,
           modelGewisseld,
           actieveBouwsteen: fase === 1 ? stap + 1 : undefined,
+          modus,
         }),
       });
       if (res.status === 429) {
@@ -366,7 +389,24 @@ export function VerhaalMaker({
         setBezig(false);
         return;
       }
-      if (!res.ok || !res.body) throw new Error("coach faalt");
+      if (!res.ok) {
+        const errTekst = await res
+          .text()
+          .catch(() => "");
+        setBerichten((b) => [
+          ...b,
+          {
+            van: "bot",
+            isError: true,
+            tekst:
+              errTekst ||
+              "De coach is even niet bereikbaar. Klik op **Opnieuw proberen** of stel je vraag anders.",
+          },
+        ]);
+        setBezig(false);
+        return;
+      }
+      if (!res.body) throw new Error("coach faalt");
 
       const modelGebruikt = res.headers.get("X-Model") ?? modelId ?? undefined;
       if (modelGebruikt) vorigGebruiktModel.current = modelGebruikt;
@@ -476,6 +516,17 @@ export function VerhaalMaker({
     }
   };
 
+  const [plaatsBevestigdIndex, setPlaatsBevestigdIndex] = React.useState<
+    number | null
+  >(null);
+
+  const plaatsAiVersie = (index: number, verhaal: string) => {
+    setVerhaalTekst(verhaal);
+    setPlaatsBevestigdIndex(index);
+    setTimeout(() => setPlaatsBevestigdIndex(null), 1800);
+    if (isMobile) setMobielTab("werkvlak");
+  };
+
   const [selectie, setSelectie] = React.useState("");
   React.useEffect(() => {
     const h = () => {
@@ -576,7 +627,7 @@ export function VerhaalMaker({
   const woordenTelling = verhaalTekst.trim()
     ? verhaalTekst.trim().split(/\s+/).filter(Boolean).length
     : 0;
-  const auteurNaam = auteur || leerling.naam;
+  const auteurNaam = leerling.naam;
 
   const htmlEscape = (s: string) =>
     s
@@ -638,35 +689,6 @@ export function VerhaalMaker({
     },
     [bouwstenen, leerling, stappen, verhaalTekst, verhaalTitel],
   );
-
-  React.useEffect(() => {
-    if (!hydrated) return;
-    if (vorigeFase.current === null) {
-      vorigeFase.current = fase;
-      return;
-    }
-    if (vorigeFase.current === 1 && fase === 2) {
-      downloadBackup("bouwstenen-klaar");
-    }
-    vorigeFase.current = fase;
-  }, [hydrated, fase, downloadBackup]);
-
-  React.useEffect(() => {
-    if (!hydrated) return;
-    const huidig = verhaalTekst.trim()
-      ? verhaalTekst.trim().split(/\s+/).filter(Boolean).length
-      : 0;
-    if (vorigeWoorden.current === null) {
-      vorigeWoorden.current = huidig;
-      return;
-    }
-    for (const mijlpaal of [100, 300]) {
-      if (vorigeWoorden.current < mijlpaal && huidig >= mijlpaal) {
-        downloadBackup(`${mijlpaal}-woorden-bereikt`);
-      }
-    }
-    vorigeWoorden.current = huidig;
-  }, [hydrated, verhaalTekst, downloadBackup]);
 
   const exporteerWord = () => {
     const titelEsc = htmlEscape(verhaalTitel);
@@ -1312,6 +1334,7 @@ ${paragrafen}
       {klaar && (
         <BibKlaarScherm
           titel={verhaalTitel}
+          onTitelChange={setVerhaalTitel}
           tekst={verhaalTekst}
           auteur={auteurNaam}
           klas={leerling.klas}
@@ -1576,7 +1599,7 @@ ${paragrafen}
                 padding: isMobile ? "8px 12px" : "9px 16px",
                 borderRadius: 4,
                 border: "none",
-                background: BIB.antraciet,
+                background: BIB.oranje,
                 color: BIB.wit,
                 fontSize: isMobile ? 12 : 13,
                 fontWeight: 700,
@@ -1938,10 +1961,31 @@ ${paragrafen}
             >
               {berichten.map((b, i) => {
                 const isBotBericht = b.van === "bot" && !b.isError;
-                const parsed = isBotBericht
+                const naBouwsteen = isBotBericht
                   ? parseBouwsteenTag(b.tekst)
                   : { tekst: b.tekst, bouwsteen: null as number | "geen" | null };
-                const zichtbareTekst = parsed.tekst;
+                const naWissel = isBotBericht
+                  ? parseWisselTag(naBouwsteen.tekst)
+                  : { tekst: naBouwsteen.tekst, wissel: null as "zelf" | "ai" | null };
+                const verhaalGeparseerd = isBotBericht
+                  ? parseVerhaalBlok(naWissel.tekst)
+                  : { uitleg: naWissel.tekst, verhaal: null as string | null };
+                const parsed = {
+                  tekst: verhaalGeparseerd.uitleg,
+                  bouwsteen: naBouwsteen.bouwsteen,
+                };
+                const heeftVerhaalBlok = verhaalGeparseerd.verhaal !== null;
+                const wisselVoorstel: "zelf" | "ai" | null =
+                  naWissel.wissel &&
+                  ((naWissel.wissel === "ai" && verhaalKeuze !== "ai") ||
+                    (naWissel.wissel === "zelf" && verhaalKeuze !== "zelf"))
+                    ? naWissel.wissel
+                    : null;
+                const zichtbareTekst =
+                  parsed.tekst.trim() ||
+                  (heeftVerhaalBlok
+                    ? "Hier is een nieuwe versie van je verhaal."
+                    : parsed.tekst);
                 const eerdereTagsZelfdeBouwsteen =
                   typeof parsed.bouwsteen === "number"
                     ? berichten.slice(0, i).filter((m) => {
@@ -2038,6 +2082,80 @@ ${paragrafen}
                         {modellen.find((m) => m.id === b.modelId)?.label ??
                           b.modelId}
                       </div>
+                    )}
+                    {heeftVerhaalBlok && verhaalGeparseerd.verhaal && (
+                      <button
+                        onClick={() =>
+                          plaatsAiVersie(i, verhaalGeparseerd.verhaal!)
+                        }
+                        style={{
+                          marginTop: 8,
+                          padding: "5px 10px",
+                          borderRadius: 4,
+                          border: `1px solid ${BIB.antraciet}`,
+                          background:
+                            plaatsBevestigdIndex === i
+                              ? BIB.levendig
+                              : BIB.wit,
+                          color:
+                            plaatsBevestigdIndex === i
+                              ? BIB.wit
+                              : BIB.antraciet,
+                          fontSize: 11.5,
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          fontFamily: BIB.tekst,
+                          letterSpacing: 0.2,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                          transition: "background 0.2s",
+                        }}
+                      >
+                        {plaatsBevestigdIndex === i
+                          ? "✓ Geplaatst"
+                          : "↗ Plaats deze versie in mijn verhaal"}
+                      </button>
+                    )}
+                    {wisselVoorstel && fase === 2 && (
+                      <button
+                        onClick={() => {
+                          if (wisselVoorstel === "ai" && !alleBouwstenenVol) {
+                            window.alert(
+                              `De AI kan pas een verhaal schrijven als alle ${stappen.length} bouwstenen zijn ingevuld. Vul ze eerst aan in stap 1.`,
+                            );
+                            return;
+                          }
+                          if (
+                            wisselVoorstel === "ai" &&
+                            verhaalTekst.trim() &&
+                            !window.confirm(
+                              "Bij wisselen naar AI-modus kan de AI je huidige verhaal overschrijven met een nieuwe versie. Doorgaan?",
+                            )
+                          ) {
+                            return;
+                          }
+                          setVerhaalKeuze(wisselVoorstel);
+                        }}
+                        style={{
+                          marginTop: 8,
+                          padding: "6px 12px",
+                          borderRadius: 4,
+                          border: `1px solid ${BIB.antraciet}`,
+                          background: BIB.antraciet,
+                          color: BIB.wit,
+                          fontSize: 11.5,
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          fontFamily: BIB.tekst,
+                          letterSpacing: 0.2,
+                        }}
+                      >
+                        ↻ Wissel naar{" "}
+                        {wisselVoorstel === "ai"
+                          ? "AI laat schrijven"
+                          : "zelf schrijven"}
+                      </button>
                     )}
                     {toonSamenvatKnop && (
                       <button
@@ -2164,7 +2282,9 @@ ${paragrafen}
                 placeholder={
                   fase === 1
                     ? "Vraag feedback op je bouwstenen…"
-                    : "Vraag feedback op jouw verhaal…"
+                    : verhaalKeuze === "ai"
+                      ? "Vraag de AI om iets aan te passen…"
+                      : "Vraag feedback op jouw verhaal…"
                 }
                 rows={1}
                 style={{
@@ -2568,6 +2688,37 @@ ${paragrafen}
                   >
                     ← terug naar werkblad
                   </button>
+                  {verhaalKeuze !== null && (
+                    <button
+                      onClick={() => {
+                        if (
+                          verhaalTekst.trim() &&
+                          !window.confirm(
+                            verhaalKeuze === "ai"
+                              ? "Je verhaal blijft staan. Wil je terug naar de keuze tussen zelf schrijven of AI?"
+                              : "Je verhaal blijft staan. Als je voor AI kiest, wordt het overschreven met een nieuwe versie. Doorgaan?",
+                          )
+                        ) {
+                          return;
+                        }
+                        setVerhaalKeuze(null);
+                      }}
+                      title="Wissel tussen zelf schrijven en door AI laten schrijven"
+                      style={{
+                        padding: "3px 10px",
+                        borderRadius: 99,
+                        border: `1px solid ${BIB.antraciet}`,
+                        background: BIB.wit,
+                        color: BIB.antraciet,
+                        fontSize: 11,
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        fontFamily: BIB.tekst,
+                      }}
+                    >
+                      ↻ Wissel modus ({verhaalKeuze === "ai" ? "AI" : "zelf"})
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -2602,21 +2753,20 @@ ${paragrafen}
                     marginTop: 4,
                   }}
                 />
-                <input
-                  value={auteur}
-                  onChange={(e) => setAuteur(e.target.value)}
-                  placeholder="door…"
-                  style={{
-                    width: "100%",
-                    background: "transparent",
-                    border: "none",
-                    outline: "none",
-                    color: BIB.antracietSoft,
-                    fontSize: isMobile ? 16 : 12.5,
-                    fontStyle: "italic",
-                    fontFamily: BIB.tekst,
-                  }}
-                />
+                {leerling.naam && (
+                  <div
+                    style={{
+                      width: "100%",
+                      color: BIB.antracietSoft,
+                      fontSize: isMobile ? 14 : 12.5,
+                      fontStyle: "italic",
+                      fontFamily: BIB.tekst,
+                      padding: "2px 0",
+                    }}
+                  >
+                    door {leerling.naam}
+                  </div>
+                )}
               </div>
               <div
                 style={{
@@ -2664,7 +2814,7 @@ ${paragrafen}
                     </button>
                   </div>
                 )}
-                {verhaalKeuze === null && !verhaalTekst.trim() && !genereerBezig ? (
+                {verhaalKeuze === null && !genereerBezig ? (
                   <div
                     style={{
                       flex: 1,
@@ -2736,7 +2886,9 @@ ${paragrafen}
                               marginBottom: 4,
                             }}
                           >
-                            Zelf schrijven
+                            {verhaalTekst.trim()
+                              ? "Zelf doorschrijven"
+                              : "Zelf schrijven"}
                           </div>
                           <div
                             style={{
@@ -2745,59 +2897,112 @@ ${paragrafen}
                               lineHeight: 1.5,
                             }}
                           >
-                            Jij schrijft, de coach helpt je aanscherpen.
+                            {verhaalTekst.trim()
+                              ? "Je huidige tekst blijft staan; jij schrijft verder, de coach helpt je aanscherpen."
+                              : "Jij schrijft, de coach helpt je aanscherpen."}
                           </div>
                         </button>
 
-                        <button
-                          onClick={genereerVerhaal}
-                          disabled={!alleBouwstenenVol || genereerBezig}
-                          title={
-                            alleBouwstenenVol
-                              ? "Laat de AI een eerste versie schrijven op basis van jouw bouwstenen"
-                              : `Vul eerst alle ${stappen.length} bouwstenen in`
-                          }
+                        <div
                           style={{
-                            textAlign: "left",
-                            padding: "14px 16px",
-                            borderRadius: 6,
-                            border: `1.5px solid ${
-                              alleBouwstenenVol ? BIB.antraciet : BIB.line
-                            }`,
-                            background: alleBouwstenenVol
-                              ? BIB.wit
-                              : BIB.beigeSoft,
-                            color: alleBouwstenenVol
-                              ? BIB.antraciet
-                              : BIB.antracietSoft,
-                            cursor: alleBouwstenenVol
-                              ? "pointer"
-                              : "not-allowed",
-                            fontFamily: BIB.tekst,
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 6,
                           }}
                         >
-                          <div
+                          <button
+                            onClick={() => {
+                              if (!alleBouwstenenVol) return;
+                              if (verhaalTekst.trim()) {
+                                setVerhaalKeuze("ai");
+                              } else {
+                                genereerVerhaal();
+                              }
+                            }}
+                            disabled={!alleBouwstenenVol || genereerBezig}
+                            title={
+                              alleBouwstenenVol
+                                ? verhaalTekst.trim()
+                                  ? "De AI helpt je je huidige tekst aan te scherpen of uit te breiden — je tekst blijft staan."
+                                  : "Laat de AI een eerste versie schrijven op basis van jouw bouwstenen"
+                                : `Vul eerst alle ${stappen.length} bouwstenen in`
+                            }
                             style={{
-                              fontFamily: BIB.kop,
-                              fontSize: 15,
-                              fontWeight: 600,
-                              marginBottom: 4,
+                              textAlign: "left",
+                              padding: "14px 16px",
+                              borderRadius: 6,
+                              border: `1.5px solid ${
+                                alleBouwstenenVol ? BIB.antraciet : BIB.line
+                              }`,
+                              background: alleBouwstenenVol
+                                ? BIB.wit
+                                : BIB.beigeSoft,
+                              color: alleBouwstenenVol
+                                ? BIB.antraciet
+                                : BIB.antracietSoft,
+                              cursor: alleBouwstenenVol
+                                ? "pointer"
+                                : "not-allowed",
+                              fontFamily: BIB.tekst,
                             }}
                           >
-                            Laat AI het verhaal schrijven
-                          </div>
-                          <div
-                            style={{
-                              fontSize: 12,
-                              lineHeight: 1.5,
-                              opacity: alleBouwstenenVol ? 0.85 : 1,
-                            }}
-                          >
-                            {alleBouwstenenVol
-                              ? "Een korte versie op basis van jouw zes bouwstenen."
-                              : `Beschikbaar zodra alle ${stappen.length} bouwstenen ingevuld zijn (nu ${gevuldAantal}/${stappen.length}).`}
-                          </div>
-                        </button>
+                            <div
+                              style={{
+                                fontFamily: BIB.kop,
+                                fontSize: 15,
+                                fontWeight: 600,
+                                marginBottom: 4,
+                              }}
+                            >
+                              {verhaalTekst.trim()
+                                ? "Laat AI verbeteren of aanvullen"
+                                : "Laat AI het verhaal schrijven"}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: 12,
+                                lineHeight: 1.5,
+                                opacity: alleBouwstenenVol ? 0.85 : 1,
+                              }}
+                            >
+                              {alleBouwstenenVol
+                                ? verhaalTekst.trim()
+                                  ? "Je tekst blijft staan; vraag de AI in de chat om aanpassingen (langer, andere scène, ander einde…)."
+                                  : "Een korte versie op basis van jouw zes bouwstenen."
+                                : `Beschikbaar zodra alle ${stappen.length} bouwstenen ingevuld zijn (nu ${gevuldAantal}/${stappen.length}).`}
+                            </div>
+                          </button>
+                          {verhaalTekst.trim() && alleBouwstenenVol && (
+                            <button
+                              onClick={() => {
+                                if (
+                                  !window.confirm(
+                                    "Je huidige verhaal wordt overschreven met een compleet nieuwe versie. Weet je het zeker?",
+                                  )
+                                )
+                                  return;
+                                genereerVerhaal();
+                              }}
+                              disabled={genereerBezig}
+                              style={{
+                                padding: "6px 10px",
+                                borderRadius: 4,
+                                border: "none",
+                                background: "transparent",
+                                color: BIB.antracietSoft,
+                                fontSize: 11.5,
+                                fontWeight: 500,
+                                cursor: genereerBezig ? "default" : "pointer",
+                                fontFamily: BIB.tekst,
+                                textAlign: "left",
+                                textDecoration: "underline",
+                              }}
+                            >
+                              ↺ of: begin opnieuw vanaf bouwstenen (overschrijft
+                              huidige tekst)
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       <div

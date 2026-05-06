@@ -12,6 +12,7 @@ const BOEKBOT_URL = "https://Boekbot.nl";
 
 type Props = {
   titel: string;
+  onTitelChange: (titel: string) => void;
   tekst: string;
   auteur: string;
   klas: string;
@@ -89,6 +90,7 @@ function BibActieKnop({
 
 export function BibKlaarScherm({
   titel,
+  onTitelChange,
   tekst,
   auteur,
   klas,
@@ -200,18 +202,44 @@ export function BibKlaarScherm({
             marginBottom: 22,
           }}
         >
-          <div
+          {!titel.trim() && (
+            <div
+              style={{
+                fontFamily: BIB.tekst,
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: 0.6,
+                textTransform: "uppercase",
+                color: BIB.vaag,
+                marginBottom: 4,
+              }}
+            >
+              Bedenk nog een titel
+            </div>
+          )}
+          <input
+            value={titel}
+            onChange={(e) => onTitelChange(e.target.value)}
+            placeholder="Bedenk een titel voor je verhaal…"
+            autoFocus={!titel.trim()}
             style={{
+              width: "100%",
+              boxSizing: "border-box",
               fontFamily: BIB.kop,
               fontSize: 22,
               fontWeight: 600,
               color: BIB.antraciet,
-              marginBottom: 3,
               letterSpacing: -0.2,
+              background: "transparent",
+              border: "none",
+              borderBottom: titel.trim()
+                ? `1px dashed transparent`
+                : `1.5px solid ${BIB.vaag}`,
+              padding: "2px 0 4px",
+              outline: "none",
+              marginBottom: 3,
             }}
-          >
-            {titel || "Verhaal zonder titel"}
-          </div>
+          />
           {auteur && (
             <div
               style={{

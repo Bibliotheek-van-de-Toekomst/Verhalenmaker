@@ -228,13 +228,17 @@ export async function POST(req: NextRequest) {
     if (rl.cookieToSet) headers["Set-Cookie"] = rl.cookieToSet;
     return new Response(stream, { headers });
   } catch (err) {
-    console.error(
-      "genereer error:",
-      err instanceof Error ? err.message : "unknown",
-    );
-    return new Response(
-      "Het AI-model is even niet bereikbaar. Probeer het zo opnieuw.",
-      { status: 503 },
-    );
+    const msg = err instanceof Error ? err.message : "unknown";
+    console.error("genereer error:", msg);
+    const lower = msg.toLowerCase();
+    const isCapaciteit =
+      lower.includes("429") ||
+      lower.includes("capacity") ||
+      lower.includes("rate") ||
+      lower.includes("quota");
+    const tekst = isCapaciteit
+      ? `${model.label} heeft op dit moment geen capaciteit. Wissel rechtsboven via "AI: ${model.label} ▾" naar een ander model (bv. Claude Haiku of GPT-4.1 mini) en probeer opnieuw.`
+      : `Het AI-model (${model.label}) is even niet bereikbaar. Probeer het zo opnieuw, of kies rechtsboven een ander model.`;
+    return new Response(tekst, { status: 503 });
   }
 }

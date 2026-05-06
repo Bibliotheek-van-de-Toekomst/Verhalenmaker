@@ -35,7 +35,7 @@ const BOUWSTEEN_LIJST = [
   },
   {
     n: 2,
-    titel: "Setting",
+    titel: "Plek & sfeer",
     hint: "waar en wanneer speelt het (plaats, tijd, sfeer)",
   },
   { n: 3, titel: "Doel", hint: "wat wil het personage bereiken of vinden" },
