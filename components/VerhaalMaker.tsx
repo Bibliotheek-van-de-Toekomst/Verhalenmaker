@@ -1454,6 +1454,53 @@ ${paragrafen}
           }}
         >
           {!isMobile && <BibAutoSaveDot lastSave={lastSave} />}
+          <a
+            href="/info.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Lees meer over de Verhaalmaker"
+            style={{
+              padding: isMobile ? "5px 8px 5px 5px" : "6px 14px 6px 6px",
+              borderRadius: 99,
+              border: "none",
+              background: BIB.wit,
+              color: BIB.antraciet,
+              fontSize: 12.5,
+              fontWeight: 700,
+              fontFamily: BIB.tekst,
+              letterSpacing: 0.3,
+              textDecoration: "none",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              transition: "background 0.15s",
+              cursor: "pointer",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.background = BIB.beige)
+            }
+            onMouseLeave={(e) => (e.currentTarget.style.background = BIB.wit)}
+          >
+            <span
+              aria-hidden
+              style={{
+                width: 20,
+                height: 20,
+                borderRadius: 99,
+                background: BIB.antraciet,
+                color: BIB.wit,
+                display: "grid",
+                placeItems: "center",
+                fontSize: 12,
+                fontWeight: 700,
+                fontStyle: "italic",
+                fontFamily: BIB.kop,
+              }}
+            >
+              i
+            </span>
+            {!isMobile && <span>Info</span>}
+          </a>
           <ModelSelector
             modellen={modellen}
             huidigId={modelId}

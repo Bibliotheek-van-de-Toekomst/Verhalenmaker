@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verhaalmaker — Informatie</title>
+  <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+  <style>
+    :root {
+      --wit: #ffffff;
+      --beige: #fde5d0;
+      --beige-soft: #fef3e6;
+      --antraciet: #39373a;
+      --antraciet-soft: #6a6870;
+      --oranje: #ec7404;
+      --line: #e5ddd1;
+      --koel: #f4f3f5;
+      --levendig: #3f8a5a;
+      --vaag: #c64a2e;
+      --kop: "The Mix", "TheMixOT", Georgia, serif;
+      --tekst: Arial, Helvetica, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--koel);
+      font-family: var(--tekst);
+      color: var(--antraciet);
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .topbar {
+      background: var(--antraciet);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+    .topbar .logo-tile {
+      background: var(--wit);
+      padding: 6px 12px;
+      border-radius: 2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .topbar .logo-tile img {
+      height: 28px;
+      display: block;
+    }
+    .topbar .right {
+      margin-left: auto;
+    }
+    .topbar a.terug {
+      color: rgba(255,255,255,0.85);
+      text-decoration: none;
+      font-size: 13px;
+      letter-spacing: 0.3px;
+      padding: 6px 14px 6px 10px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 99px;
+      transition: background 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .topbar a.terug:hover {
+      background: rgba(255,255,255,0.12);
+    }
+    .topbar a.terug .ico {
+      width: 18px;
+      height: 18px;
+      background: var(--wit);
+      border-radius: 99px;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+    .topbar a.terug .ico svg {
+      width: 12px;
+      height: 12px;
+    }
+    footer a.terug-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      color: var(--oranje);
+    }
+    footer a.terug-link:hover {
+      text-decoration: underline;
+    }
+    footer a.terug-link svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .hero {
+      background: var(--wit);
+      border-bottom: 1px solid var(--line);
+      padding: 36px 24px 30px;
+    }
+    .hero-inner {
+      max-width: 760px;
+      margin: 0 auto;
+      display: flex;
+      align-items: flex-start;
+      gap: 18px;
+    }
+    .hero-icon {
+      flex-shrink: 0;
+      width: 56px;
+      height: 56px;
+      display: grid;
+      place-items: center;
+    }
+    .hero-icon img { width: 100%; height: 100%; }
+    .hero h1 {
+      margin: 0 0 4px;
+      font-family: var(--kop);
+      font-size: 38px;
+      font-weight: 600;
+      color: var(--antraciet);
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+    }
+    .hero .ondertitel {
+      margin: 0;
+      color: var(--oranje);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+    .hero .krul {
+      margin-top: 6px;
+      width: 132px;
+      height: 8px;
+      display: block;
+    }
+
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 32px 24px 80px;
+    }
+
+    section { margin-bottom: 36px; }
+
+    h2 {
+      font-family: var(--kop);
+      color: var(--oranje);
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+      margin: 36px 0 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--beige);
+    }
+    h3 {
+      font-family: var(--kop);
+      color: var(--antraciet);
+      font-size: 18px;
+      font-weight: 700;
+      margin: 22px 0 8px;
+    }
+    h4 {
+      font-family: var(--kop);
+      color: var(--antraciet);
+      font-size: 15px;
+      font-weight: 700;
+      margin: 16px 0 6px;
+      letter-spacing: 0.2px;
+    }
+    p { margin: 0 0 12px; }
+    p strong { color: var(--antraciet); }
+
+    ul.bib-bullets {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 14px;
+    }
+    ul.bib-bullets li {
+      position: relative;
+      padding: 4px 0 4px 22px;
+    }
+    ul.bib-bullets li::before {
+      content: "";
+      position: absolute;
+      left: 0; top: 14px;
+      width: 8px; height: 8px;
+      background: var(--oranje);
+      border-radius: 99px;
+    }
+
+    .intro-card {
+      background: var(--beige);
+      border-radius: 6px;
+      padding: 22px 26px;
+      margin-bottom: 28px;
+    }
+    .intro-card p { margin: 0 0 8px; }
+    .intro-card p:last-child { margin-bottom: 0; }
+
+    .quote {
+      background: var(--beige-soft);
+      border-left: 3px solid var(--oranje);
+      padding: 12px 16px;
+      margin: 14px 0;
+      font-style: italic;
+      color: var(--antraciet);
+      border-radius: 0 4px 4px 0;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 99px;
+      background: var(--antraciet);
+      color: var(--wit);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      vertical-align: 2px;
+    }
+
+    .wel-niet {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 14px 0;
+    }
+    .wel, .niet {
+      padding: 14px 16px;
+      border-radius: 6px;
+      border: 1px solid;
+    }
+    .wel {
+      background: #e9f3eb;
+      border-color: var(--levendig);
+    }
+    .niet {
+      background: #fceae3;
+      border-color: var(--vaag);
+    }
+    .wel h4, .niet h4 {
+      margin-top: 0;
+      font-size: 13px;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+    }
+    .wel h4 { color: var(--levendig); }
+    .niet h4 { color: var(--vaag); }
+    .wel ul, .niet ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .wel li, .niet li {
+      padding: 3px 0;
+      font-size: 14px;
+    }
+    .wel li::before {
+      content: "✓ ";
+      color: var(--levendig);
+      font-weight: 700;
+    }
+    .niet li::before {
+      content: "✗ ";
+      color: var(--vaag);
+      font-weight: 700;
+    }
+
+    table.modellen {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0;
+      font-size: 14px;
+    }
+    table.modellen th {
+      background: var(--beige);
+      color: var(--antraciet);
+      text-align: left;
+      padding: 10px 12px;
+      font-family: var(--kop);
+      font-size: 13px;
+      letter-spacing: 0.3px;
+      border-bottom: 2px solid var(--antraciet);
+    }
+    table.modellen td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    table.modellen td:first-child {
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .step {
+      display: flex;
+      gap: 14px;
+      padding: 16px 18px;
+      background: var(--wit);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      margin: 10px 0;
+    }
+    .step-num {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      border-radius: 99px;
+      background: var(--antraciet);
+      color: var(--wit);
+      display: grid;
+      place-items: center;
+      font-family: var(--kop);
+      font-weight: 700;
+      font-size: 15px;
+    }
+    .step-body h4 { margin-top: 0; }
+    .step-body p:last-child { margin-bottom: 0; }
+
+    footer {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 20px 24px 40px;
+      color: var(--antraciet-soft);
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+    }
+    footer a { color: var(--oranje); }
+
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 28px; }
+      .wel-niet { grid-template-columns: 1fr; }
+      main { padding: 24px 18px 60px; }
+      .hero { padding: 24px 18px 22px; }
+      .topbar { padding: 10px 14px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="logo-tile">
+      <img src="/logo.jpg" alt="Brainport Bibliotheken" />
+    </div>
+    <div class="right">
+      <a class="terug" href="/" onclick="return gaTerug(event);">
+        <span class="ico" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none" stroke="#39373a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 4l6 6L10 28l-6 2 2-6L22 4z" fill="#fde5d0"/>
+            <path d="M18 8l6 6"/>
+          </svg>
+        </span>
+        <span>← terug naar de Verhaalmaker</span>
+      </a>
+    </div>
+  </div>
+
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="hero-icon">
+        <img src="/verhaalmaker.svg" alt="" />
+      </div>
+      <div>
+        <div class="ondertitel">Workshop creatief schrijven</div>
+        <h1>Verhaalmaker</h1>
+        <svg class="krul" viewBox="0 0 132 8" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2 5 Q 30 -2, 60 4 T 130 4" stroke="#ec7404" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <div class="intro-card">
+      <p>De <strong>Verhaalmaker</strong> is ontwikkeld door de <strong>Brainport Bibliotheken</strong> als onderdeel van het project <em>Bouwen aan de Bibliotheek van de Toekomst</em>, ten behoeve van jongeren in het <strong>voortgezet onderwijs</strong> (alle niveaus en klassen).</p>
+      <p>De applicatie wordt gebruikt door <strong>lees-media-consulenten</strong> als onderdeel van hun werk aan <strong>leesbevordering</strong>.</p>
+    </div>
+
+    <p>De Verhaalmaker is een web-app waarin leerlingen op het VO een kort verhaal van ongeveer 300 woorden maken met behulp van een AI. Die AI kan op twee manieren helpen — als <strong>coach</strong> bij het zelf schrijven, of als <strong>schrijver</strong> die op aanwijzing van de leerling een eerste versie maakt. De huisstijl van de Bibliotheek loopt door de hele app heen, en alle teksten zijn in het Nederlands.</p>
+
+    <h2>1. Beschrijving van de applicatie</h2>
+
+    <p>De app is opgebouwd in twee stappen: eerst worden de zes <em>bouwstenen</em> van het verhaal verzameld (personage, plek &amp; sfeer, doel, conflict, verhaallijn, genre), en daarna komt de schrijffase. In die schrijffase kiest de leerling tussen zelf schrijven (de AI helpt als coach) of de AI laten schrijven (de leerling stuurt op afstand met aanwijzingen).</p>
+
+    <p>Alles wat de leerling typt blijft op haar eigen apparaat — er wordt geen account aangemaakt en geen data op een server opgeslagen. Aan het eind kan het verhaal worden geëxporteerd als Word- of PDF-bestand of per e-mail worden verzonden. Daarnaast genereert de app een prompt voor <em>Boekbot</em>, waarmee de leerling een vergelijkbaar bestaand boek kan opzoeken.</p>
+
+    <h3>Kerneigenschappen</h3>
+    <ul class="bib-bullets">
+      <li><strong>Twee schrijfmodi</strong> — leerling kiest of zij zelf schrijft of de AI inschakelt; wisselen kan op elk moment, bestaande tekst blijft behouden.</li>
+      <li><strong>Werken in stappen</strong> — zes bouwstenen vormen het skelet van het verhaal; de AI weet daardoor altijd waar het over gaat.</li>
+      <li><strong>Live coaching</strong> — terwijl de leerling werkt, geeft de AI tips, vragen en suggesties — geen kant-en-klare zinnen in coach-modus.</li>
+      <li><strong>Medailles</strong> — de leerling verdient zichtbare medailles voor concrete bouwstenen, levendige beschrijvingen en het halen van een woordental.</li>
+      <li><strong>Boekbot-prompt</strong> aan het eind — brug naar het bestaande boekenaanbod van de Bibliotheek.</li>
+      <li><strong>Auto-save</strong> in de browser, plus een knop voor handmatige back-up als tekstbestand.</li>
+    </ul>
+
+    <h2>2. Workflow voor de leerling</h2>
+
+    <p>Hieronder de volgorde waarin een leerling door de app loopt, van eerste bezoek tot opgeslagen verhaal.</p>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>Welkom en voornaam</h4>
+        <p>Een welkomstscherm legt uit dat de AI helpt — als coach bij haar eigen tekst, of als schrijver die een eerste versie voor haar maakt. Daarna vult de leerling haar voornaam in. Die naam komt automatisch onder het verhaal te staan als auteur.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>Stap 1 — Bouwstenen verzamelen</h4>
+        <p>Op het werkblad rechts staan zes kaarten: <strong>Personage</strong>, <strong>Plek &amp; sfeer</strong>, <strong>Doel</strong>, <strong>Conflict</strong>, <strong>Verhaallijn</strong> en <strong>Genre</strong>. In het linkerpaneel voert de leerling een gesprek met de coach over die bouwstenen.</p>
+        <p>Zodra het gesprek concreet wordt, verschijnt onder een coach-antwoord de knop <span class="pill">↗ Gebruik voor een bouwsteen</span>. Eén klik en het idee uit het gesprek wordt door de AI samengevat tot een korte zin die de leerling in haar bouwsteen kan zetten.</p>
+        <p>De knop <em>Klaar om te schrijven →</em> wordt actief zodra minimaal vier bouwstenen ingevuld zijn. Voor de optie waarin de AI het verhaal schrijft moeten alle zes ingevuld zijn.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>Stap 2 — Verhaal schrijven</h4>
+        <p>De leerling kiest tussen twee opties — en die keuze kan ze altijd herzien zonder verlies van haar tekst.</p>
+
+        <p><strong>Optie A — Zelf schrijven.</strong> De leerling typt zelf in het verhaal-veld. De coach in het linkerpaneel geeft tips, vragen en feedback. Wat de coach <em>niet</em> doet, is hele zinnen voor haar schrijven — dat is bewust de "gouden regel" van coach-modus. De leerling kan een zin selecteren en kiest dan een snelle feedback-knop: <em>Feedback</em>, <em>Te vaag?</em>, <em>Filmischer</em> of <em>Korter</em>.</p>
+
+        <p><strong>Optie B — Laat AI schrijven.</strong> De AI levert een eerste versie van ongeveer 200–300 woorden, op B1-niveau, gebaseerd op de zes bouwstenen. Die tekst verschijnt direct in het verhaal-veld. Daarna kan de leerling in de chat aanwijzingen geven: "maak het langer", "voeg een spannende scène toe", "verander het einde". Bij elk antwoord van de AI verschijnt onder dat bericht de knop <span class="pill">↗ Plaats deze versie in mijn verhaal</span>.</p>
+
+        <p>Wisselen tussen Optie A en B kan altijd. Als de leerling tekst heeft en wisselt, blijft die tekst behouden. Bij wisselen van A naar B helpt de AI haar tekst <em>verbeteren of aanvullen</em> — tenzij ze expliciet kiest voor "begin opnieuw vanaf bouwstenen".</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h4>Klaar-scherm</h4>
+        <p>Bij <em>Ik ben klaar →</em> opent een afsluitend scherm met:</p>
+        <ul class="bib-bullets">
+          <li>Een veld om <strong>de titel</strong> aan te vullen of te wijzigen, met een rode hint als de titel ontbreekt.</li>
+          <li>Een overzicht van de <strong>medailles</strong> die de leerling heeft verdiend.</li>
+          <li>Een sectie <strong>"Bestaat er al zo'n verhaal?"</strong> — een knop genereert een Boekbot-prompt op basis van titel en bouwstenen; een tweede knop opent Boekbot in een nieuw tabblad.</li>
+          <li>Knoppen om het verhaal te <strong>exporteren als Word, PDF, of per mail</strong> te verzenden.</li>
+          <li>Een knop <strong>"Download backup"</strong> die alles als tekstbestand bewaart.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>3. Gedrag van de AI</h2>
+
+    <p>De AI heeft een ander rolgedrag in elke modus. Hieronder samengevat in gewone taal — de volledige instructies aan de AI staan als prompt-bestanden in de broncode.</p>
+
+    <h3>3.1 Coach-modus (de leerling schrijft zelf)</h3>
+
+    <p><strong>Gouden regel:</strong> de coach <strong>schrijft NOOIT zinnen of alinea's voor</strong> die de leerling kan overnemen, ook niet op verzoek. Vraagt de leerling "schrijf de openingszin voor mij", dan weigert de coach vriendelijk en geeft in plaats daarvan een vraag of een soort-suggestie.</p>
+
+    <div class="quote">
+      "Nog niet — dat is het leukste om zelf te doen! Probeer eens: begin met een zintuig (wat hoort/ruikt/voelt je personage?) of met een handeling midden in de scène. Welke van die twee past bij jouw sfeer?"
+    </div>
+
+    <p><strong>Werkritme:</strong> bij het eerste contact over een bouwsteen stelt de coach open tegenvragen. Pas in vervolg-antwoorden synthetiseert hij wat sterk is en wat nog vaag.</p>
+
+    <p><strong>Soorten feedback:</strong></p>
+    <ul class="bib-bullets">
+      <li><strong>Te vaag?</strong> — "Welk detail mist? Naam, leeftijd, tijd?"</li>
+      <li><strong>Show, don't tell</strong> — "Je vertelt dat hij bang is. Hoe merk je dat aan zijn lichaam?"</li>
+      <li><strong>Ritme</strong> — "Lange zin, lange zin — probeer er een korte tussen."</li>
+      <li><strong>Zintuigen</strong> — "Ik zie het personage, maar hoor of voel ik iets?"</li>
+      <li><strong>Actiewoord</strong> — "Wissel <em>ging</em> of <em>was</em> voor een specifieker werkwoord."</li>
+    </ul>
+
+    <p><strong>Geen spelfoutcorrectie</strong> in stap 2 — bewust, om de creativiteit te laten stromen. Spelling kan later.</p>
+
+    <h3>3.2 Schrijver-modus (de AI schrijft mee)</h3>
+
+    <p>In schrijver-modus levert de AI <strong>wél</strong> hele verhalen — expliciet aangeboden als alternatief voor de leerling die niet zelf wil of kan schrijven. De eerste versie is ongeveer 200–300 woorden op B1-niveau.</p>
+
+    <p>Bij elk vervolg-verzoek ("maak het langer", "verander het einde", "voeg een spannende scène toe") levert de AI een complete nieuwe versie terug, voorafgegaan door een korte uitleg in 1–2 zinnen.</p>
+
+    <p><strong>Bouwsteen wint bij conflict.</strong> Als de leerling een bouwsteen achteraf wijzigt en de oude verhaaltekst klopt niet meer, herschrijft de AI bij het volgende verzoek de afwijkende delen — ook als de leerling daar niet expliciet om vraagt.</p>
+
+    <p><strong>De AI past zelf geen bouwstenen aan.</strong> Vraagt de leerling daarom ("maak Lise wat ouder"), dan verwijst de AI haar naar de knop <em>← terug naar werkblad</em> in de bouwstenen-balk.</p>
+
+    <h3>3.3 Wat de AI wél en níet schrijft</h3>
+
+    <p>Geldt vooral voor de <strong>schrijver-modus</strong> en de <strong>eerste-versie-generator</strong>. De insteek is: <em>niet preuts, niet braaf, ook niet plat</em> — passend bij wat Nederlandse VO-leerlingen op school al lezen.</p>
+
+    <div class="wel-niet">
+      <div class="wel">
+        <h4>Wel toegestaan</h4>
+        <ul>
+          <li>Spanning, mystery, dood, een lijk, geesten, ruzie, gevecht, achtervolging</li>
+          <li>Verliefdheid, een kus, verdriet, eenzaamheid, jaloezie</li>
+          <li>Alcohol of drugs in het verhaal — zonder ze te verheerlijken als levensstijl</li>
+          <li>Een lichte vloek in dialoog ("verdomme", "shit") als het bij het personage past</li>
+        </ul>
+      </div>
+      <div class="niet">
+        <h4>Niet toegestaan</h4>
+        <ul>
+          <li>Expliciete seksuele scènes</li>
+          <li>Grafisch bloed of marteling — een gevecht of een lijk mag wel, sober beschreven</li>
+          <li>Scheldwoorden gericht op groepen mensen (racistisch, homofoob, seksistisch)</li>
+          <li>Keiharde F-bombs als stopwoord in elke zin</li>
+          <li>Drugs of alcohol als coole levensstijl</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>3.4 Wisselen tussen modi vanuit gesprek</h3>
+
+    <p>Als een leerling in coach-modus schrijft "laat de AI het toch maar schrijven", of in schrijver-modus "ik wil het zelf gaan doen", herkent de AI dat. Onder dat antwoord verschijnt dan een knop <span class="pill">↻ Wissel naar AI / zelf schrijven</span>. Eén klik en de leerling zit in de andere modus, met behoud van haar bestaande tekst.</p>
+
+    <h2>4. Beschikbare AI-modellen</h2>
+
+    <p>De Verhaalmaker is niet gekoppeld aan één specifiek AI-model. Er zijn vier modellen beschikbaar; de leerling kan zelf wisselen via het knopje <span class="pill">AI: …</span> rechtsboven. Zo ervaart ze dat verschillende modellen hetzelfde verhaal anders schrijven — een leerzame ontdekking op zichzelf.</p>
+
+    <table class="modellen">
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th>Aanbieder</th>
+          <th>Karakter</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Mistral Small</td>
+          <td>Mistral (Frankrijk)</td>
+          <td>Aanbevolen standaard voor de workshop. Europees, goedkoop, redelijke Nederlandse output.</td>
+        </tr>
+        <tr>
+          <td>Ministral 8B</td>
+          <td>Mistral (Frankrijk)</td>
+          <td>Nog goedkoper alternatief; korter en compacter, soms iets droger in toon.</td>
+        </tr>
+        <tr>
+          <td>Claude Haiku 4.5</td>
+          <td>Anthropic (VS)</td>
+          <td>Snel en sterk in het Nederlands; iets duurder dan Mistral. Vaak het meest natuurlijke schrijftalent.</td>
+        </tr>
+        <tr>
+          <td>GPT-4.1 mini</td>
+          <td>OpenAI (VS)</td>
+          <td>Goedkope mini-variant met goede Nederlandse output; volgt instructies trouw.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Welke modellen verschijnen voor de leerling?</h3>
+    <ul class="bib-bullets">
+      <li>Alleen modellen waarvoor de Bibliotheek een API-sleutel heeft geconfigureerd, verschijnen in de keuzelijst.</li>
+      <li>Een beheerder kan de lijst optioneel beperken (bijvoorbeeld om alleen Europese modellen aan te bieden).</li>
+      <li>De keuze van de leerling blijft bewaard in haar browser, dus bij een volgend bezoek staat haar voorkeur er nog.</li>
+    </ul>
+
+    <h3>Wat als een model tijdelijk niet bereikbaar is?</h3>
+    <p>Als een AI-model tijdelijk geen capaciteit heeft (bijvoorbeeld omdat een hele klas tegelijk werkt), krijgt de leerling een specifieke melding: <em>"Mistral Small heeft op dit moment geen capaciteit. Wissel rechtsboven naar een ander model."</em> Met één klik is ze weer aan het werk.</p>
+
+    <h3>Privacy</h3>
+    <p>Wat de leerling typt, wordt naar het gekozen AI-model gestuurd om een antwoord te genereren — dat is een externe dienst (Mistral in Frankrijk, Anthropic of OpenAI in de VS). Het verhaal zelf wordt alleen op het apparaat van de leerling opgeslagen; er is geen account en er wordt geen kopie bewaard op een server van de Bibliotheek. Bij het welkomstscherm wordt expliciet gevraagd om geen echte persoonsgegevens of gevoelige informatie in het verhaal te zetten.</p>
+
+  </main>
+
+  <footer>
+    Verhaalmaker — een product van de Brainport Bibliotheken, ontwikkeld in het project <em>Bouwen aan de Bibliotheek van de Toekomst</em>.
+    <a class="terug-link" href="/" onclick="return gaTerug(event);">
+      <svg viewBox="0 0 32 32" fill="none" stroke="#ec7404" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M22 4l6 6L10 28l-6 2 2-6L22 4z" fill="#fde5d0"/>
+        <path d="M18 8l6 6"/>
+      </svg>
+      ← terug naar de Verhaalmaker
+    </a>
+  </footer>
+
+  <script>
+    function gaTerug(e) {
+      e.preventDefault();
+      // Geopend in nieuw tabblad vanuit de app? Probeer dan dat tabblad te sluiten.
+      try {
+        if (window.opener && !window.opener.closed) {
+          window.opener.focus();
+          window.close();
+          return false;
+        }
+      } catch (_) {}
+      // Browser-geschiedenis aanwezig? Ga één stap terug.
+      if (window.history.length > 1) {
+        window.history.back();
+        return false;
+      }
+      // Anders: ga naar de homepage van de app.
+      window.location.href = "/";
+      return false;
+    }
+  </script>
+
+</body>
+</html>

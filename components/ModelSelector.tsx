@@ -46,22 +46,45 @@ export function ModelSelector({ modellen, huidigId, onKies }: Props) {
         aria-haspopup="listbox"
         aria-expanded={open}
         style={{
-          padding: "4px 10px",
+          padding: "6px 12px 6px 6px",
           borderRadius: 99,
-          border: "1px solid rgba(255,255,255,0.2)",
-          background: open ? "rgba(255,255,255,0.12)" : "transparent",
-          color: "rgba(255,255,255,0.85)",
-          fontSize: 10.5,
+          border: "none",
+          background: open ? BIB.beige : BIB.wit,
+          color: BIB.antraciet,
+          fontSize: 12.5,
+          fontWeight: 700,
           fontFamily: BIB.tekst,
           cursor: "pointer",
           letterSpacing: 0.3,
-          display: "flex",
+          display: "inline-flex",
           alignItems: "center",
           gap: 6,
+          transition: "background 0.15s",
+        }}
+        onMouseEnter={(e) => {
+          if (!open) e.currentTarget.style.background = BIB.beige;
+        }}
+        onMouseLeave={(e) => {
+          if (!open) e.currentTarget.style.background = BIB.wit;
         }}
       >
-        <span>AI: {huidig?.label ?? "kies model"}</span>
-        <span style={{ opacity: 0.6, fontSize: 9 }}>▾</span>
+        <span
+          aria-hidden
+          style={{
+            padding: "1px 8px",
+            borderRadius: 99,
+            background: BIB.antraciet,
+            color: BIB.wit,
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: 0.4,
+            fontFamily: BIB.kop,
+          }}
+        >
+          AI
+        </span>
+        <span>{huidig?.label ?? "kies model"}</span>
+        <span style={{ opacity: 0.55, fontSize: 9 }}>▾</span>
       </button>
       {open && (
         <>
