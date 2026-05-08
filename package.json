@@ -2,6 +2,16 @@
   "name": "verhaalmaker",
   "version": "0.1.0",
   "private": true,
+  "license": "AGPL-3.0-or-later",
+  "author": "Brainport Bibliotheken",
+  "homepage": "https://github.com/Bibliotheek-van-de-Toekomst/Verhalenmaker",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Bibliotheek-van-de-Toekomst/Verhalenmaker.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Bibliotheek-van-de-Toekomst/Verhalenmaker/issues"
+  },
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build --webpack",

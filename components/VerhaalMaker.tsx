@@ -1,5 +1,14 @@
 "use client";
 
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Brainport Bibliotheken
+//
+// Verhalenmaker is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version. See LICENSE.
+
+
 import React from "react";
 import { BIB } from "@/lib/tokens";
 import { BIB_STAPPEN, BOUWSTEEN_ICON, WAAROM } from "@/lib/stappen";
@@ -1500,6 +1509,52 @@ ${paragrafen}
               i
             </span>
             {!isMobile && <span>Info</span>}
+          </a>
+          <a
+            href="https://github.com/Bibliotheek-van-de-Toekomst/Verhalenmaker"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Broncode van de Verhalenmaker (AGPL-3.0)"
+            aria-label="Broncode op GitHub (AGPL-3.0-or-later)"
+            style={{
+              padding: isMobile ? "5px 8px" : "6px 12px",
+              borderRadius: 99,
+              border: `1px solid ${BIB.wit}`,
+              background: "transparent",
+              color: BIB.wit,
+              fontSize: 11.5,
+              fontWeight: 600,
+              fontFamily: BIB.tekst,
+              letterSpacing: 0.3,
+              textDecoration: "none",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              transition: "background 0.15s, color 0.15s",
+              cursor: "pointer",
+              opacity: 0.85,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = BIB.wit;
+              e.currentTarget.style.color = BIB.antraciet;
+              e.currentTarget.style.opacity = "1";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "transparent";
+              e.currentTarget.style.color = BIB.wit;
+              e.currentTarget.style.opacity = "0.85";
+            }}
+          >
+            <svg
+              aria-hidden
+              width={isMobile ? 14 : 14}
+              height={isMobile ? 14 : 14}
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.7-3.87-1.54-3.87-1.54-.52-1.33-1.27-1.68-1.27-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.68 1.25 3.34.96.1-.74.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.05 0 0 .97-.31 3.18 1.18.92-.26 1.91-.39 2.89-.39.98 0 1.97.13 2.89.39 2.21-1.49 3.18-1.18 3.18-1.18.62 1.59.23 2.76.11 3.05.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.41-5.25 5.69.41.36.78 1.06.78 2.14 0 1.55-.01 2.8-.01 3.18 0 .31.21.67.8.56 4.56-1.52 7.85-5.83 7.85-10.91C23.5 5.65 18.35.5 12 .5z" />
+            </svg>
+            {!isMobile && <span>Broncode</span>}
           </a>
           <ModelSelector
             modellen={modellen}

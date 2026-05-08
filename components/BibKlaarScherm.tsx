@@ -1,5 +1,14 @@
 "use client";
 
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Brainport Bibliotheken
+//
+// Verhalenmaker is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version. See LICENSE.
+
+
 import React from "react";
 import { BIB } from "@/lib/tokens";
 import { BibLogo } from "./BibLogo";
@@ -545,6 +554,30 @@ export function BibKlaarScherm({
           >
             Nieuw verhaal
           </button>
+        </div>
+
+        <div
+          style={{
+            marginTop: 18,
+            paddingTop: 12,
+            borderTop: `1px dashed ${BIB.line}`,
+            fontSize: 10.5,
+            color: BIB.antracietSoft,
+            fontFamily: BIB.tekst,
+            lineHeight: 1.5,
+            textAlign: "center",
+            letterSpacing: 0.1,
+          }}
+        >
+          Verhalenmaker · © 2026 Brainport Bibliotheken ·{" "}
+          <a
+            href="https://github.com/Bibliotheek-van-de-Toekomst/Verhalenmaker"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: BIB.antracietSoft, textDecoration: "underline" }}
+          >
+            Broncode (AGPL-3.0)
+          </a>
         </div>
       </div>
     </div>

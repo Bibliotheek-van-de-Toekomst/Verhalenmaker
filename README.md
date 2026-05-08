@@ -4,6 +4,10 @@ Web-app waar VO-leerlingen (14–16) een kort verhaal schrijven met een AI die
 **óf coacht (de leerling schrijft zelf) óf zelf schrijft** (de leerling stuurt
 op afstand met aanwijzingen). Huisstijl: de Bibliotheek.
 
+> **Licentie**: code onder [AGPL-3.0-or-later](LICENSE), prompts en
+> documentatie onder [CC BY-SA 4.0](prompts/LICENSE.md). Zie
+> [Licentie](#licentie) onderaan voor de details.
+
 ## Doel van dit document
 
 Dit README is bedoeld om aan **leesmediacoaches (LMCs)** voor te leggen ter
@@ -305,3 +309,42 @@ prompts/
   beperkt de lijst via env-var.
 - **Echte The-Mix-fonts** — fallback naar Georgia/Arial. Vervang vóór
   productie als de fontfile beschikbaar is.
+
+## Licentie
+
+De Verhalenmaker is ontwikkeld door **Brainport Bibliotheken** (Bibliotheek
+Eindhoven en partners) en is beschikbaar onder de **GNU Affero General
+Public License versie 3 of later** ([AGPL-3.0-or-later](LICENSE)). Dit
+betekent dat de app vrij gebruikt, aangepast en zelf-gehost mag worden door
+bibliotheken, scholen en andere organisaties, mits eventuele aangepaste
+versies onder dezelfde licentie beschikbaar worden gesteld — ook wanneer ze
+als web-app worden aangeboden (AGPL artikel 13). Bij gebruik, demo of
+publicatie verzoeken wij om vermelding van Brainport Bibliotheken als
+oorspronkelijke maker.
+
+De prompts in [`/prompts`](prompts/) en de begeleidende documentatie staan
+onder **Creative Commons Naamsvermelding-GelijkDelen 4.0 Internationaal**
+([CC BY-SA 4.0](prompts/LICENSE.md)).
+
+Voor vragen over commerciële samenwerking of afwijkende licentievoorwaarden:
+neem contact op via Brainport Bibliotheken.
+
+### Voor wie de app zelf wil hosten
+
+Bibliotheken en scholen kunnen de Verhalenmaker downloaden, eigen API-keys
+plaatsen in `.env.local`, en lokaal of op eigen hosting draaien zonder
+beperkingen. AGPL geldt voor de Verhalenmaker zelf, niet voor de externe
+LLM-diensten (Anthropic, OpenAI, Mistral) waarmee de app praat — daar gelden
+de eigen voorwaarden van de provider en de eigen API-keys van de host.
+
+Wel verplicht onder AGPL artikel 13: als u een aangepaste versie publiek
+aanbiedt via een netwerk (web of API), moet u eindgebruikers de gelegenheid
+geven uw aangepaste broncode te downloaden. Een link in de footer van de app
+naar uw fork volstaat.
+
+### Voor wie wil bijdragen
+
+Bijdragen aan de Verhalenmaker worden ingeleverd onder dezelfde licentie als
+het project (AGPL-3.0-or-later voor code, CC BY-SA 4.0 voor prompts en
+documentatie). Door een pull request te openen verklaart de bijdrager dat
+hij/zij gerechtigd is de bijdrage onder deze voorwaarden te leveren.
