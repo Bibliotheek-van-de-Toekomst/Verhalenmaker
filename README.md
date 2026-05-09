@@ -312,15 +312,15 @@ prompts/
 
 ## Licentie
 
-De Verhalenmaker is ontwikkeld door **Brainport Bibliotheken** (Bibliotheek
-Eindhoven en partners) en is beschikbaar onder de **GNU Affero General
-Public License versie 3 of later** ([AGPL-3.0-or-later](LICENSE)). Dit
-betekent dat de app vrij gebruikt, aangepast en zelf-gehost mag worden door
-bibliotheken, scholen en andere organisaties, mits eventuele aangepaste
-versies onder dezelfde licentie beschikbaar worden gesteld — ook wanneer ze
-als web-app worden aangeboden (AGPL artikel 13). Bij gebruik, demo of
-publicatie verzoeken wij om vermelding van Brainport Bibliotheken als
-oorspronkelijke maker.
+De Verhalenmaker is ontwikkeld door de **Brainport Bibliotheken** (zie
+[Colofon](#colofon) onderaan) en is beschikbaar onder de **GNU Affero
+General Public License versie 3 of later** ([AGPL-3.0-or-later](LICENSE)).
+Dit betekent dat de app vrij gebruikt, aangepast en zelf-gehost mag worden
+door bibliotheken, scholen en andere organisaties, mits eventuele
+aangepaste versies onder dezelfde licentie beschikbaar worden gesteld —
+ook wanneer ze als web-app worden aangeboden (AGPL artikel 13). Bij
+gebruik, demo of publicatie verzoeken wij om vermelding van Brainport
+Bibliotheken als oorspronkelijke maker.
 
 De prompts in [`/prompts`](prompts/) en de begeleidende documentatie staan
 onder **Creative Commons Naamsvermelding-GelijkDelen 4.0 Internationaal**
@@ -348,3 +348,21 @@ Bijdragen aan de Verhalenmaker worden ingeleverd onder dezelfde licentie als
 het project (AGPL-3.0-or-later voor code, CC BY-SA 4.0 voor prompts en
 documentatie). Door een pull request te openen verklaart de bijdrager dat
 hij/zij gerechtigd is de bijdrage onder deze voorwaarden te leveren.
+
+## Colofon
+
+De **Brainport Bibliotheken** is het samenwerkingsverband van de openbare
+bibliotheken in de Brainport-regio. Bij dit samenwerkingsverband zijn
+aangesloten:
+
+- de Bibliotheek Regio Eindhoven
+- Bibliotheek Helmond-Peel
+- Bibliotheek De Kempen
+- Biblioplus
+- Bibliocenter
+- Bibliotheek Dommeldal
+- Bibliotheek De Lage Beemden
+- Bibliotheek Veldhoven
+
+De Verhalenmaker is binnen dit samenwerkingsverband ontwikkeld in het
+programma *Bouwen aan de Bibliotheek van de Toekomst*.
