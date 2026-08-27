@@ -1618,6 +1618,7 @@ ${paragrafen}
           auteur={auteurNaam}
           klas={leerling.klas}
           bouwstenen={bouwstenen}
+          modelId={modelId}
           verdiendeBadges={berekenBadgeIds(bouwstenen, verhaalTekst)}
           onDicht={() => setKlaar(false)}
           onWord={exporteerWord}

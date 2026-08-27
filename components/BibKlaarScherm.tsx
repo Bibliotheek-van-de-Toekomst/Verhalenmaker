@@ -26,6 +26,7 @@ type Props = {
   auteur: string;
   klas: string;
   bouwstenen: Record<string, string>;
+  modelId?: string | null;
   verdiendeBadges: Set<BadgeId>;
   onDicht: () => void;
   onWord: () => void;
@@ -34,29 +35,35 @@ type Props = {
   onReset: () => void;
 };
 
-function bouwBoekbotPrompt(
-  bouwstenen: Record<string, string>,
-  titel: string,
-): string {
-  const regels: string[] = [];
-  regels.push(
-    "Ik heb zelf een kort verhaal geschreven met de bouwstenen hieronder. Welk boek voor jongeren (14–16 jaar) past hier goed bij?",
-  );
-  regels.push("");
-  if (titel.trim()) {
-    regels.push(`Titel van mijn verhaal: "${titel.trim()}"`);
-    regels.push("");
-  }
-  regels.push("Bouwstenen:");
-  for (const s of BIB_STAPPEN) {
-    const v = (bouwstenen[String(s.n)] || "").trim();
-    if (v) regels.push(`- ${s.titel}: ${v}`);
-  }
-  regels.push("");
-  regels.push(
-    "Geef één tot drie boektips, met per tip een korte uitleg waarom het past.",
-  );
-  return regels.join("\n");
+// Boekbot zoekt op thema en sfeer en weigert lange berichten. Alle zes de
+// bouwstenen letterlijk doorgeven leverde ruim duizend tekens op en werd
+// afgewezen. De AI destilleert er daarom eerst de kern uit.
+function bouwBoekbotPrompt(zoekvraag: string): string {
+  return [
+    "Welk boek voor jongeren van 14–16 jaar past hierbij?",
+    "",
+    zoekvraag,
+    "",
+    "Geef één tot drie boektips met een korte uitleg.",
+  ].join("\n");
+}
+
+// Terugval als de samenvatting niet lukt: kort, en alleen de bouwstenen die
+// iets over thema en sfeer zeggen. Beter een ruwe korte vraag dan geen vraag.
+function korteTerugval(bouwstenen: Record<string, string>): string {
+  const kort = (n: number, max: number) => {
+    const v = (bouwstenen[String(n)] || "").trim().replace(/\s+/g, " ");
+    return v.length > max ? `${v.slice(0, max).trimEnd()}…` : v;
+  };
+  const doel = kort(3, 110);
+  const conflict = kort(4, 110);
+  const genre = kort(6, 60);
+  const delen = [
+    doel ? `een verhaal over ${doel}` : "een verhaal",
+    conflict ? `met als tegenslag ${conflict}` : "",
+    genre ? `sfeer: ${genre}` : "",
+  ].filter(Boolean);
+  return delen.join(", ");
 }
 
 function BibActieKnop({
@@ -104,6 +111,7 @@ export function BibKlaarScherm({
   auteur,
   klas,
   bouwstenen,
+  modelId,
   verdiendeBadges,
   onDicht,
   onWord,
@@ -115,10 +123,34 @@ export function BibKlaarScherm({
   const woorden = tekst.trim() ? tekst.trim().split(/\s+/).filter(Boolean).length : 0;
   const [boekbotOpen, setBoekbotOpen] = React.useState(false);
   const [gekopieerd, setGekopieerd] = React.useState(false);
-  const boekbotPrompt = React.useMemo(
-    () => bouwBoekbotPrompt(bouwstenen, titel),
-    [bouwstenen, titel],
-  );
+  const [boekbotPrompt, setBoekbotPrompt] = React.useState("");
+  const [boekbotBezig, setBoekbotBezig] = React.useState(false);
+  const [boekbotTerugval, setBoekbotTerugval] = React.useState(false);
+
+  const maakBoekbotPrompt = async () => {
+    setBoekbotOpen(true);
+    setBoekbotBezig(true);
+    setBoekbotTerugval(false);
+    try {
+      const res = await fetch("/api/boekbot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bouwstenen, modelId }),
+      });
+      const data = await res.json();
+      if (res.ok && typeof data?.zoekvraag === "string") {
+        setBoekbotPrompt(bouwBoekbotPrompt(data.zoekvraag));
+      } else {
+        setBoekbotPrompt(bouwBoekbotPrompt(korteTerugval(bouwstenen)));
+        setBoekbotTerugval(true);
+      }
+    } catch {
+      setBoekbotPrompt(bouwBoekbotPrompt(korteTerugval(bouwstenen)));
+      setBoekbotTerugval(true);
+    } finally {
+      setBoekbotBezig(false);
+    }
+  };
 
   const kopieerPrompt = async () => {
     try {
@@ -397,7 +429,7 @@ export function BibKlaarScherm({
 
           {!boekbotOpen ? (
             <button
-              onClick={() => setBoekbotOpen(true)}
+              onClick={maakBoekbotPrompt}
               style={{
                 padding: "10px 16px",
                 borderRadius: 4,
@@ -415,11 +447,38 @@ export function BibKlaarScherm({
             </button>
           ) : (
             <>
+              {boekbotBezig && (
+                <div
+                  style={{
+                    fontSize: 12.5,
+                    color: BIB.antracietSoft,
+                    fontFamily: BIB.tekst,
+                    marginBottom: 10,
+                  }}
+                >
+                  De AI vat je verhaal samen tot een korte zoekvraag…
+                </div>
+              )}
+              {boekbotTerugval && !boekbotBezig && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: BIB.vaag,
+                    fontFamily: BIB.tekst,
+                    marginBottom: 8,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Samenvatten lukte even niet. Hieronder staat een kortere
+                  vraag op basis van je bouwstenen. Je kunt hem zelf nog
+                  bijschaven.
+                </div>
+              )}
               <textarea
                 value={boekbotPrompt}
-                readOnly
+                onChange={(e) => setBoekbotPrompt(e.target.value)}
                 onFocus={(e) => e.currentTarget.select()}
-                rows={8}
+                rows={6}
                 style={{
                   width: "100%",
                   background: BIB.wit,
