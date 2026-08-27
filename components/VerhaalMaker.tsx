@@ -605,6 +605,10 @@ export function VerhaalMaker({
           modelGewisseld,
           actieveBouwsteen: fase === 1 ? stap + 1 : undefined,
           modus,
+          geschiedenis: berichten
+            .filter((b) => !b.isError)
+            .slice(-6)
+            .map((b) => ({ van: b.van, tekst: b.tekst })),
         }),
       });
       if (res.status === 429) {

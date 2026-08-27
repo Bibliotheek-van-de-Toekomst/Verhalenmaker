@@ -39,7 +39,44 @@ type Body = {
   modelGewisseld?: boolean;
   actieveBouwsteen?: number;
   modus?: Modus;
+  geschiedenis?: { van: "bot" | "ik"; tekst: string }[];
 };
+
+type Beurt = { role: "user" | "assistant"; content: string };
+
+const MAX_BEURTEN = 6;
+const MAX_BEURT_TEKENS = 1200;
+
+// Eerdere beurten meesturen zodat "doe dat nog eens maar korter" werkt.
+// De verhaalblokken gaan eruit: die zijn lang, en de actuele verhaaltekst
+// wordt toch al apart meegestuurd.
+function maakBeurten(geschiedenis: Body["geschiedenis"]): Beurt[] {
+  if (!Array.isArray(geschiedenis)) return [];
+  const ruw: Beurt[] = [];
+  for (const b of geschiedenis.slice(-MAX_BEURTEN)) {
+    if (!b || typeof b.tekst !== "string") continue;
+    let tekst = b.tekst;
+    if (b.van === "bot") {
+      const m = tekst.match(/^[ \t]*={3,}\s*VERHAAL\s*={3,}[ \t]*$/im);
+      if (m && m.index !== undefined) tekst = tekst.slice(0, m.index);
+    }
+    tekst = clean(tekst, MAX_BEURT_TEKENS).trim();
+    if (!tekst) continue;
+    ruw.push({ role: b.van === "bot" ? "assistant" : "user", content: tekst });
+  }
+  // Providers verwachten om en om, beginnend bij de leerling. De begroeting
+  // van de bot valt er daardoor vanzelf af.
+  const beurten: Beurt[] = [];
+  for (const beurt of ruw) {
+    if (beurten.length === 0 && beurt.role === "assistant") continue;
+    if (beurten[beurten.length - 1]?.role === beurt.role) continue;
+    beurten.push(beurt);
+  }
+  // De vraag van nu volgt hierna, dus mag de laatste beurt niet van de
+  // leerling zijn.
+  if (beurten[beurten.length - 1]?.role === "user") beurten.pop();
+  return beurten;
+}
 
 function promptBestand(fase: 1 | 2, modus: Modus): string {
   if (fase === 2 && modus === "schrijver") return "fase2-ai.md";
@@ -70,13 +107,14 @@ async function streamAnthropic(
   system: string,
   user: string,
   maxTokens: number,
+  beurten: Beurt[],
 ) {
   const anthropic = new Anthropic({ apiKey: process.env[model.envKey]! });
   const stream = anthropic.messages.stream({
     model: model.modelId,
     max_tokens: maxTokens,
     system,
-    messages: [{ role: "user", content: user }],
+    messages: [...beurten, { role: "user", content: user }],
   });
   const enc = new TextEncoder();
   return new ReadableStream<Uint8Array>({
@@ -103,6 +141,7 @@ async function streamOpenAI(
   system: string,
   user: string,
   maxTokens: number,
+  beurten: Beurt[],
 ) {
   const openai = new OpenAI({ apiKey: process.env[model.envKey]! });
   const stream = await openai.chat.completions.create({
@@ -111,6 +150,7 @@ async function streamOpenAI(
     stream: true,
     messages: [
       { role: "system", content: system },
+      ...beurten,
       { role: "user", content: user },
     ],
   });
@@ -135,6 +175,7 @@ async function streamMistral(
   system: string,
   user: string,
   maxTokens: number,
+  beurten: Beurt[],
 ) {
   const client = new Mistral({ apiKey: process.env[model.envKey]! });
   const stream = await client.chat.stream({
@@ -142,6 +183,7 @@ async function streamMistral(
     maxTokens,
     messages: [
       { role: "system", content: system },
+      ...beurten,
       { role: "user", content: user },
     ],
   });
@@ -166,14 +208,15 @@ async function streamForModel(
   system: string,
   user: string,
   maxTokens: number,
+  beurten: Beurt[],
 ) {
   switch (model.provider) {
     case "anthropic":
-      return streamAnthropic(model, system, user, maxTokens);
+      return streamAnthropic(model, system, user, maxTokens, beurten);
     case "openai":
-      return streamOpenAI(model, system, user, maxTokens);
+      return streamOpenAI(model, system, user, maxTokens, beurten);
     case "mistral":
-      return streamMistral(model, system, user, maxTokens);
+      return streamMistral(model, system, user, maxTokens, beurten);
   }
 }
 
@@ -289,7 +332,13 @@ export async function POST(req: NextRequest) {
         }\nLeerling: "${schoneVraag}"`;
 
   try {
-    const stream = await streamForModel(model, system, user, maxTokens);
+    const stream = await streamForModel(
+      model,
+      system,
+      user,
+      maxTokens,
+      maakBeurten(body.geschiedenis),
+    );
     const headers: Record<string, string> = {
       "Content-Type": "text/plain; charset=utf-8",
       "X-Model": model.id,
