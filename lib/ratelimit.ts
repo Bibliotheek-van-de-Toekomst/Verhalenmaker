@@ -28,11 +28,25 @@ let geinitialiseerd = false;
 function init() {
   if (geinitialiseerd) return;
   geinitialiseerd = true;
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  // Vercel zet deze variabelen onder verschillende namen, afhankelijk van hoe
+  // de database is gekoppeld: UPSTASH_* bij de oude integratie, KV_* bij de
+  // huidige marketplace-koppeling. Beide wijzen naar hetzelfde REST-adres.
+  const url =
+    process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+  const token =
+    process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
   if (!url || !token) {
     console.warn(
-      "Rate-limiting UIT: UPSTASH_REDIS_REST_URL/TOKEN niet gezet.",
+      "Rate-limiting UIT: geen UPSTASH_REDIS_REST_* of KV_REST_API_* gezet.",
+    );
+    return;
+  }
+  // REDIS_URL en KV_URL zijn TCP-adressen (rediss://) waar deze client niets
+  // mee kan. Liever hier stoppen met een duidelijke melding dan verderop een
+  // onverklaarbare fout.
+  if (!/^https?:\/\//i.test(url)) {
+    console.warn(
+      "Rate-limiting UIT: het adres is geen REST-adres (verwacht https://).",
     );
     return;
   }
