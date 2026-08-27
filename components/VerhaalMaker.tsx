@@ -42,6 +42,7 @@ type SavedState = Partial<{
   fase: 1 | 2;
   stap: number;
   bouwstenen: Record<string, string>;
+  oordelen: Record<string, BouwsteenOordeel>;
   verhaalTitel: string;
   verhaalTekst: string;
   leerling: Leerling;
@@ -131,33 +132,31 @@ function parseVerhaalBlok(tekst: string): {
   };
 }
 
-function scoreVan(t: string): "vaag" | "goed" | "levendig" | null {
-  if (!t || t.length < 10) return null;
-  const cijfer = /\d/.test(t),
-    komma = /,/.test(t),
-    w = t.split(/\s+/).length;
-  if (t.length > 60 && cijfer && komma && w > 10) return "levendig";
-  if (t.length > 30 && (komma || cijfer)) return "goed";
-  return "vaag";
-}
+type Oordeel = "kan-concreter" | "goed" | "sterk";
 
-const scoreInfo = {
-  vaag: {
-    label: "te vaag",
-    kleur: BIB.vaag,
-    tip: "Voeg een detail toe: een naam, een leeftijd, of iets wat je ziet of hoort.",
-  },
-  goed: {
-    label: "goed",
-    kleur: BIB.antraciet,
-    tip: "Goed! Nog één zintuig erbij maakt het filmisch.",
-  },
-  levendig: {
-    label: "levendig",
-    kleur: BIB.levendig,
-    tip: "Dit kun je mooi in je verhaal gebruiken.",
-  },
-} as const;
+// Het oordeel komt van de AI, die de tekst naast de bedoeling van déze
+// bouwsteen legt. Het hoort bij één specifieke tekst: verandert die, dan
+// vervalt het oordeel tot de AI opnieuw heeft meegelezen.
+type BouwsteenOordeel = { tekst: string; oordeel: Oordeel; tip: string };
+
+const OORDEEL_STIJL: Record<Oordeel, { label: string; kleur: string }> = {
+  "kan-concreter": { label: "kan concreter", kleur: BIB.vaag },
+  goed: { label: "goed", kleur: BIB.antraciet },
+  sterk: { label: "sterk", kleur: BIB.levendig },
+};
+
+const MIN_TEKENS_OORDEEL = 12;
+
+function oordeelInfo(
+  opgeslagen: BouwsteenOordeel | undefined,
+  huidigeTekst: string,
+): { label: string; kleur: string; tip: string } | null {
+  if (!opgeslagen) return null;
+  if (opgeslagen.tekst !== huidigeTekst.trim()) return null;
+  const stijl = OORDEEL_STIJL[opgeslagen.oordeel];
+  if (!stijl) return null;
+  return { ...stijl, tip: opgeslagen.tip };
+}
 
 type Props = {
   subnaam?: string;
@@ -200,6 +199,7 @@ export function VerhaalMaker({
   );
 
   const stappen = BIB_STAPPEN.slice(0, stepCount);
+  const actieveBouwsteenNr: number | undefined = stappen[stap]?.n;
 
   const [bouwstenen, setBouwstenen] = React.useState<Record<string, string>>({
     "1": "",
@@ -209,6 +209,9 @@ export function VerhaalMaker({
     "5": "",
     "6": "",
   });
+  const [oordelen, setOordelen] = React.useState<
+    Record<string, BouwsteenOordeel>
+  >({});
   const [verhaalTitel, setVerhaalTitel] = React.useState("");
   const [verhaalTekst, setVerhaalTekst] = React.useState("");
   const [onboarding, setOnboarding] = React.useState(true);
@@ -237,6 +240,7 @@ export function VerhaalMaker({
     if (saved.fase) setFase(saved.fase);
     if (typeof saved.stap === "number") setStap(saved.stap);
     if (saved.bouwstenen) setBouwstenen((b) => ({ ...b, ...saved.bouwstenen }));
+    if (saved.oordelen) setOordelen(saved.oordelen);
     if (saved.verhaalTitel) setVerhaalTitel(saved.verhaalTitel);
     if (saved.verhaalTekst) setVerhaalTekst(saved.verhaalTekst);
     if (saved.leerling?.naam) {
@@ -267,6 +271,50 @@ export function VerhaalMaker({
       .catch(() => setModellen([]));
   }, []);
 
+  // De AI leest mee met de bouwsteen waar de leerling mee bezig is, en beoordeelt
+  // die naast de bedoeling van juist déze bouwsteen. Pas na een korte pauze in
+  // het typen, zodat er niet bij elke toetsaanslag een verzoek uitgaat.
+  React.useEffect(() => {
+    if (!hydrated || !actieveBouwsteenNr) return;
+    const sleutel = String(actieveBouwsteenNr);
+    const tekst = (bouwstenen[sleutel] || "").trim();
+    if (tekst.length < MIN_TEKENS_OORDEEL) return;
+    if (oordelen[sleutel]?.tekst === tekst) return;
+
+    let afgebroken = false;
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/bouwsteen", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            bouwsteenNr: actieveBouwsteenNr,
+            tekst,
+            modelId,
+          }),
+        });
+        if (afgebroken || !res.ok) return;
+        const data = await res.json();
+        if (afgebroken || !data?.oordeel) return;
+        setOordelen((o) => ({
+          ...o,
+          [sleutel]: {
+            tekst,
+            oordeel: data.oordeel as Oordeel,
+            tip: typeof data.tip === "string" ? data.tip : "",
+          },
+        }));
+      } catch {
+        // Geen oordeel is beter dan een verkeerd oordeel: de chip blijft weg.
+      }
+    }, 1200);
+
+    return () => {
+      afgebroken = true;
+      clearTimeout(timer);
+    };
+  }, [hydrated, actieveBouwsteenNr, bouwstenen, oordelen, modelId]);
+
   React.useEffect(() => {
     if (!hydrated) return;
     try {
@@ -276,6 +324,7 @@ export function VerhaalMaker({
           fase,
           stap,
           bouwstenen,
+          oordelen,
           verhaalTitel,
           verhaalTekst,
           leerling,
@@ -295,6 +344,7 @@ export function VerhaalMaker({
     fase,
     stap,
     bouwstenen,
+    oordelen,
     verhaalTitel,
     verhaalTekst,
     leerling,
@@ -557,7 +607,9 @@ export function VerhaalMaker({
   React.useEffect(() => {
     const h = () => {
       const s = window.getSelection?.()?.toString().trim();
-      if (s && s.length > 2) setSelectie(s);
+      // Ook leegmaken als de selectie vervalt, anders blijft de selectiebalk
+      // hangen zodra je er een keer een zin in hebt gemarkeerd.
+      setSelectie(s && s.length > 2 ? s : "");
     };
     document.addEventListener("selectionchange", h);
     return () => document.removeEventListener("selectionchange", h);
@@ -2460,8 +2512,13 @@ ${paragrafen}
               >
                 {stappen.map((s, i) => {
                   const aktief = i === stap;
-                  const score = scoreVan(bouwstenen[String(s.n)] || "");
-                  const info = score ? scoreInfo[score] : null;
+                  const opgeslagen = oordelen[String(s.n)];
+                  const info = oordeelInfo(
+                    opgeslagen,
+                    bouwstenen[String(s.n)] || "",
+                  );
+                  const oordeel: Oordeel | null =
+                    info && opgeslagen ? opgeslagen.oordeel : null;
                   const iconNaam = (BOUWSTEEN_ICON[s.n] || "book") as IconName;
                   return (
                     <div
@@ -2492,10 +2549,10 @@ ${paragrafen}
                             width: 28,
                             height: 28,
                             borderRadius: 99,
-                            background: score
-                              ? score === "levendig"
+                            background: oordeel
+                              ? oordeel === "sterk"
                                 ? BIB.levendig
-                                : score === "goed"
+                                : oordeel === "goed"
                                   ? BIB.antraciet
                                   : BIB.vaag
                               : BIB.beige,
@@ -2504,7 +2561,7 @@ ${paragrafen}
                             flexShrink: 0,
                           }}
                         >
-                          {score === "levendig" || score === "goed" ? (
+                          {oordeel === "sterk" || oordeel === "goed" ? (
                             <BibIcon
                               name="check"
                               size={13}
@@ -2516,7 +2573,11 @@ ${paragrafen}
                               name={iconNaam}
                               size={14}
                               stroke={1.8}
-                              color={score === "vaag" ? BIB.wit : BIB.antraciet}
+                              color={
+                                oordeel === "kan-concreter"
+                                  ? BIB.wit
+                                  : BIB.antraciet
+                              }
                             />
                           )}
                         </div>
@@ -2985,14 +3046,22 @@ ${paragrafen}
                         >
                           <button
                             onClick={() => {
-                              if (!alleBouwstenenVol) return;
+                              // Niet blokkeren met een stopteken, maar uitleggen
+                              // waarom de AI nog niet kan beginnen.
+                              if (!alleBouwstenenVol) {
+                                setGenereerFout(
+                                  `Vul eerst alle ${stappen.length} bouwstenen in, dan kan de AI je verhaal schrijven. Je hebt er nu ${gevuldAantal} van de ${stappen.length}.`,
+                                );
+                                return;
+                              }
+                              setGenereerFout(null);
                               if (verhaalTekst.trim()) {
                                 setVerhaalKeuze("ai");
                               } else {
                                 genereerVerhaal();
                               }
                             }}
-                            disabled={!alleBouwstenenVol || genereerBezig}
+                            disabled={genereerBezig}
                             title={
                               alleBouwstenenVol
                                 ? verhaalTekst.trim()
@@ -3013,9 +3082,7 @@ ${paragrafen}
                               color: alleBouwstenenVol
                                 ? BIB.antraciet
                                 : BIB.antracietSoft,
-                              cursor: alleBouwstenenVol
-                                ? "pointer"
-                                : "not-allowed",
+                              cursor: "pointer",
                               fontFamily: BIB.tekst,
                             }}
                           >
@@ -3194,6 +3261,7 @@ ${paragrafen}
               </div>
               {selectie && fase === 2 && (
                 <div
+                  onMouseDown={(e) => e.preventDefault()}
                   style={{
                     position: "absolute",
                     bottom: 56,
