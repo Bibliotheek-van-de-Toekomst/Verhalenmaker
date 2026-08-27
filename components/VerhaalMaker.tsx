@@ -124,6 +124,11 @@ function vindVerhaalZonderMarkering(
   return index > 20 ? index : -1;
 }
 
+function telWoorden(t: string): number {
+  const schoon = t.trim();
+  return schoon ? schoon.split(/\s+/).filter(Boolean).length : 0;
+}
+
 function parseVerhaalBlok(
   tekst: string,
   huidigVerhaal = "",
@@ -632,6 +637,16 @@ export function VerhaalMaker({
     if (isMobile) setMobielTab("werkvlak");
   };
 
+  // Welk voorstel de leerling op dit moment zelf aan het bijschaven is, en de
+  // tekst waar ze in werkt. Pas bij plaatsen gaat die tekst naar het verhaal.
+  const [bewerkIndex, setBewerkIndex] = React.useState<number | null>(null);
+  const [bewerkTekst, setBewerkTekst] = React.useState("");
+
+  const startBewerken = (index: number, voorstel: string) => {
+    setBewerkIndex(index);
+    setBewerkTekst(voorstel);
+  };
+
   const draaiPlaatsingTerug = () => {
     if (terugdraaiTekst === null) return;
     setVerhaalTekst(terugdraaiTekst);
@@ -737,9 +752,7 @@ export function VerhaalMaker({
         ? "Alles gelukt! Je hebt elk onderdeel van een sterk verhaal aangeraakt."
         : "Blijf je bouwstenen aanscherpen en schrijf door — er wachten nog medailles op je.";
 
-  const woordenTelling = verhaalTekst.trim()
-    ? verhaalTekst.trim().split(/\s+/).filter(Boolean).length
-    : 0;
+  const woordenTelling = telWoorden(verhaalTekst);
   const auteurNaam = leerling.naam;
 
   const htmlEscape = (s: string) =>
@@ -2244,38 +2257,154 @@ ${paragrafen}
                       </div>
                     )}
                     {heeftVerhaalBlok && verhaalGeparseerd.verhaal && (
-                      <button
-                        onClick={() =>
-                          plaatsAiVersie(i, verhaalGeparseerd.verhaal!)
-                        }
+                      <div
                         style={{
                           marginTop: 8,
-                          padding: "5px 10px",
-                          borderRadius: 4,
-                          border: `1px solid ${BIB.antraciet}`,
-                          background:
-                            plaatsBevestigdIndex === i
-                              ? BIB.levendig
-                              : BIB.wit,
-                          color:
-                            plaatsBevestigdIndex === i
-                              ? BIB.wit
-                              : BIB.antraciet,
-                          fontSize: 11.5,
-                          fontWeight: 700,
-                          cursor: "pointer",
-                          fontFamily: BIB.tekst,
-                          letterSpacing: 0.2,
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 6,
-                          transition: "background 0.2s",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 7,
                         }}
                       >
-                        {plaatsBevestigdIndex === i
-                          ? "✓ Geplaatst"
-                          : "↗ Plaats deze versie in mijn verhaal"}
-                      </button>
+                        <div
+                          style={{
+                            fontSize: 10.5,
+                            color: BIB.antracietSoft,
+                            fontFamily: BIB.tekst,
+                            letterSpacing: 0.3,
+                            textTransform: "uppercase",
+                            fontWeight: 700,
+                          }}
+                        >
+                          {bewerkIndex === i
+                            ? "Jouw aangepaste versie"
+                            : `Voorstel · ${telWoorden(
+                                verhaalGeparseerd.verhaal,
+                              )} woorden`}
+                        </div>
+                        {bewerkIndex === i ? (
+                          <textarea
+                            value={bewerkTekst}
+                            onChange={(e) => setBewerkTekst(e.target.value)}
+                            style={{
+                              width: "100%",
+                              minHeight: 150,
+                              maxHeight: 300,
+                              padding: "10px 12px",
+                              borderRadius: 5,
+                              border: `1.5px solid ${BIB.antraciet}`,
+                              background: BIB.wit,
+                              color: BIB.antraciet,
+                              fontSize: 12.5,
+                              lineHeight: 1.65,
+                              fontFamily: BIB.tekst,
+                              resize: "vertical",
+                              outline: "none",
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              maxHeight: 190,
+                              overflowY: "auto",
+                              padding: "10px 12px",
+                              borderRadius: 5,
+                              border: `1px solid ${BIB.line}`,
+                              background: BIB.wit,
+                              color: BIB.antraciet,
+                              fontSize: 12.5,
+                              lineHeight: 1.65,
+                              whiteSpace: "pre-wrap",
+                              fontFamily: BIB.tekst,
+                            }}
+                          >
+                            {verhaalGeparseerd.verhaal}
+                          </div>
+                        )}
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 6,
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <button
+                            onClick={() => {
+                              plaatsAiVersie(
+                                i,
+                                bewerkIndex === i
+                                  ? bewerkTekst
+                                  : verhaalGeparseerd.verhaal!,
+                              );
+                              setBewerkIndex(null);
+                            }}
+                            style={{
+                              padding: "5px 10px",
+                              borderRadius: 4,
+                              border: `1px solid ${BIB.antraciet}`,
+                              background:
+                                plaatsBevestigdIndex === i
+                                  ? BIB.levendig
+                                  : BIB.wit,
+                              color:
+                                plaatsBevestigdIndex === i
+                                  ? BIB.wit
+                                  : BIB.antraciet,
+                              fontSize: 11.5,
+                              fontWeight: 700,
+                              cursor: "pointer",
+                              fontFamily: BIB.tekst,
+                              letterSpacing: 0.2,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 6,
+                              transition: "background 0.2s",
+                            }}
+                          >
+                            {plaatsBevestigdIndex === i
+                              ? "✓ Geplaatst"
+                              : bewerkIndex === i
+                                ? "↗ Plaats mijn aangepaste versie"
+                                : "↗ Plaats deze versie in mijn verhaal"}
+                          </button>
+                          {bewerkIndex === i ? (
+                            <button
+                              onClick={() => setBewerkIndex(null)}
+                              style={{
+                                padding: "5px 10px",
+                                borderRadius: 4,
+                                border: `1px solid ${BIB.line}`,
+                                background: BIB.wit,
+                                color: BIB.antracietSoft,
+                                fontSize: 11.5,
+                                fontWeight: 600,
+                                cursor: "pointer",
+                                fontFamily: BIB.tekst,
+                              }}
+                            >
+                              Annuleren
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() =>
+                                startBewerken(i, verhaalGeparseerd.verhaal!)
+                              }
+                              style={{
+                                padding: "5px 10px",
+                                borderRadius: 4,
+                                border: `1px solid ${BIB.line}`,
+                                background: BIB.wit,
+                                color: BIB.antraciet,
+                                fontSize: 11.5,
+                                fontWeight: 600,
+                                cursor: "pointer",
+                                fontFamily: BIB.tekst,
+                              }}
+                            >
+                              ✎ Eerst zelf aanpassen
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     )}
                     {wisselVoorstel && fase === 2 && (
                       <button
