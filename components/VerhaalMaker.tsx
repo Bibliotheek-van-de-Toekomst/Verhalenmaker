@@ -110,14 +110,35 @@ function schoonVerhaal(raw: string): string {
   return s.trim();
 }
 
-function parseVerhaalBlok(tekst: string): {
+// Vangnet voor een model dat de ===VERHAAL===-markering vergeet. Alleen als de
+// AI de huidige verhaaltekst letterlijk opnieuw begint te schrijven weten we
+// zeker dat het om een herziene versie gaat; een adviesantwoord doet dat niet.
+function vindVerhaalZonderMarkering(
+  tekst: string,
+  huidigVerhaal: string,
+): number {
+  const opening = huidigVerhaal.trim().slice(0, 40);
+  if (opening.length < 40) return -1;
+  const index = tekst.indexOf(opening);
+  // Staat het helemaal vooraan, dan is er geen uitleg en dus geen voorstel.
+  return index > 20 ? index : -1;
+}
+
+function parseVerhaalBlok(
+  tekst: string,
+  huidigVerhaal = "",
+): {
   uitleg: string;
   verhaal: string | null;
 } {
   const uitlegBijUitval = tekst.replace(/```\s*$/g, "").trimEnd();
   const m = tekst.match(VERHAAL_MARKER_REGEX);
   if (!m || m.index === undefined) {
-    return { uitleg: tekst, verhaal: null };
+    const start = vindVerhaalZonderMarkering(tekst, huidigVerhaal);
+    if (start === -1) return { uitleg: tekst, verhaal: null };
+    const verhaal = schoonVerhaal(tekst.slice(start));
+    if (verhaal.length < 30) return { uitleg: tekst, verhaal: null };
+    return { uitleg: tekst.slice(0, start).trimEnd(), verhaal };
   }
   let uitleg = tekst.slice(0, m.index).trimEnd();
   uitleg = uitleg.replace(/```\s*$/g, "").trimEnd();
@@ -2093,7 +2114,7 @@ ${paragrafen}
                   ? parseWisselTag(naBouwsteen.tekst)
                   : { tekst: naBouwsteen.tekst, wissel: null as "zelf" | "ai" | null };
                 const verhaalGeparseerd = isBotBericht
-                  ? parseVerhaalBlok(naWissel.tekst)
+                  ? parseVerhaalBlok(naWissel.tekst, verhaalTekst)
                   : { uitleg: naWissel.tekst, verhaal: null as string | null };
                 const parsed = {
                   tekst: verhaalGeparseerd.uitleg,
