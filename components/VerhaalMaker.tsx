@@ -124,6 +124,139 @@ function vindVerhaalZonderMarkering(
   return index > 20 ? index : -1;
 }
 
+type VerschilBlok =
+  | { soort: "gelijk"; nieuw: string }
+  | { soort: "gewijzigd"; oud: string; nieuw: string }
+  | { soort: "toegevoegd"; nieuw: string }
+  | { soort: "verwijderd"; oud: string };
+
+function splitsAlineas(t: string): string[] {
+  return (t || "")
+    .split(/\n\s*\n/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+// Hoeveel woorden hebben twee alinea's gemeen? Bepaalt of een alinea is
+// herschreven of dat het een compleet nieuwe alinea is.
+function gelijkenis(x: string, y: string): number {
+  const woorden = (t: string) =>
+    new Set(
+      t
+        .toLowerCase()
+        .split(/[^\p{L}\p{N}]+/u)
+        .filter((w) => w.length > 2),
+    );
+  const a = woorden(x);
+  const b = woorden(y);
+  if (a.size === 0 || b.size === 0) return 0;
+  let samen = 0;
+  a.forEach((w) => {
+    if (b.has(w)) samen++;
+  });
+  return samen / (a.size + b.size - samen);
+}
+
+const GELIJKENIS_DREMPEL = 0.3;
+
+// Koppel elke nieuwe alinea aan de weggevallen alinea die er het meest op
+// lijkt. Blijft er niets over om aan te koppelen, dan is het echt nieuw of
+// echt verwijderd.
+function paarAlineas(
+  blokken: VerschilBlok[],
+  weg: string[],
+  bij: string[],
+): void {
+  const gebruikt = new Set<number>();
+  for (const nieuw of bij) {
+    let beste = -1;
+    let besteScore = GELIJKENIS_DREMPEL;
+    weg.forEach((oud, k) => {
+      if (gebruikt.has(k)) return;
+      const score = gelijkenis(oud, nieuw);
+      if (score >= besteScore) {
+        besteScore = score;
+        beste = k;
+      }
+    });
+    if (beste === -1) {
+      blokken.push({ soort: "toegevoegd", nieuw });
+    } else {
+      gebruikt.add(beste);
+      blokken.push({ soort: "gewijzigd", oud: weg[beste], nieuw });
+    }
+  }
+  weg.forEach((oud, k) => {
+    if (!gebruikt.has(k)) blokken.push({ soort: "verwijderd", oud });
+  });
+}
+
+// Verschil per alinea tussen het huidige verhaal en het voorstel van de AI.
+// Bewust aan deze kant berekend: de AI levert gewoon de hele tekst, zodat er
+// geen nieuw faalpunt bij komt in wat het model moet aanleveren.
+function maakVerschil(oudeTekst: string, nieuweTekst: string): VerschilBlok[] {
+  const a = splitsAlineas(oudeTekst);
+  const b = splitsAlineas(nieuweTekst);
+  const m = a.length;
+  const n = b.length;
+
+  const tabel: number[][] = Array.from({ length: m + 1 }, () =>
+    new Array(n + 1).fill(0),
+  );
+  for (let i = m - 1; i >= 0; i--) {
+    for (let j = n - 1; j >= 0; j--) {
+      tabel[i][j] =
+        a[i] === b[j]
+          ? tabel[i + 1][j + 1] + 1
+          : Math.max(tabel[i + 1][j], tabel[i][j + 1]);
+    }
+  }
+
+  const blokken: VerschilBlok[] = [];
+  let weg: string[] = [];
+  let bij: string[] = [];
+  const verwerkRest = () => {
+    if (weg.length || bij.length) {
+      paarAlineas(blokken, weg, bij);
+      weg = [];
+      bij = [];
+    }
+  };
+
+  let i = 0;
+  let j = 0;
+  while (i < m || j < n) {
+    if (i < m && j < n && a[i] === b[j]) {
+      verwerkRest();
+      blokken.push({ soort: "gelijk", nieuw: b[j] });
+      i++;
+      j++;
+    } else if (i < m && (j >= n || tabel[i + 1][j] >= tabel[i][j + 1])) {
+      weg.push(a[i++]);
+    } else {
+      bij.push(b[j++]);
+    }
+  }
+  verwerkRest();
+  return blokken;
+}
+
+function bouwTekst(
+  blokken: VerschilBlok[],
+  afgewezen: Set<number>,
+): string {
+  const uit: string[] = [];
+  blokken.forEach((b, index) => {
+    const ja = !afgewezen.has(index);
+    if (b.soort === "gelijk") uit.push(b.nieuw);
+    else if (b.soort === "gewijzigd") uit.push(ja ? b.nieuw : b.oud);
+    else if (b.soort === "toegevoegd") {
+      if (ja) uit.push(b.nieuw);
+    } else if (!ja) uit.push(b.oud);
+  });
+  return uit.join("\n\n");
+}
+
 function telWoorden(t: string): number {
   const schoon = t.trim();
   return schoon ? schoon.split(/\s+/).filter(Boolean).length : 0;
@@ -641,6 +774,22 @@ export function VerhaalMaker({
   // tekst waar ze in werkt. Pas bij plaatsen gaat die tekst naar het verhaal.
   const [bewerkIndex, setBewerkIndex] = React.useState<number | null>(null);
   const [bewerkTekst, setBewerkTekst] = React.useState("");
+
+  // Per bericht de alinea's die de leerling juist NIET wil overnemen. Standaard
+  // staat alles aan, zodat gewoon plaatsen werkt zoals ze gewend is.
+  const [afgewezenBlokken, setAfgewezenBlokken] = React.useState<
+    Record<number, number[]>
+  >({});
+
+  const wisselBlok = (berichtIndex: number, blokIndex: number) => {
+    setAfgewezenBlokken((huidig) => {
+      const lijst = huidig[berichtIndex] || [];
+      const nieuweLijst = lijst.includes(blokIndex)
+        ? lijst.filter((k) => k !== blokIndex)
+        : [...lijst, blokIndex];
+      return { ...huidig, [berichtIndex]: nieuweLijst };
+    });
+  };
 
   const startBewerken = (index: number, voorstel: string) => {
     setBewerkIndex(index);
@@ -2148,6 +2297,25 @@ ${paragrafen}
                   bouwsteen: naBouwsteen.bouwsteen,
                 };
                 const heeftVerhaalBlok = verhaalGeparseerd.verhaal !== null;
+                // Verschil met het verhaal zoals het nu is. Zonder bestaande
+                // tekst valt er niets te vergelijken en tonen we het voorstel
+                // gewoon uit.
+                const verschil =
+                  verhaalGeparseerd.verhaal && verhaalTekst.trim()
+                    ? maakVerschil(verhaalTekst, verhaalGeparseerd.verhaal)
+                    : null;
+                const afgewezen = new Set(afgewezenBlokken[i] || []);
+                const wijzigingen = verschil
+                  ? verschil
+                      .map((blok, k) => ({ blok, k }))
+                      .filter(({ blok }) => blok.soort !== "gelijk")
+                  : [];
+                const overgenomen = wijzigingen.filter(
+                  ({ k }) => !afgewezen.has(k),
+                ).length;
+                const resultaatTekst = verschil
+                  ? bouwTekst(verschil, afgewezen)
+                  : verhaalGeparseerd.verhaal || "";
                 const wisselVoorstel: "zelf" | "ai" | null =
                   naWissel.wissel &&
                   ((naWissel.wissel === "ai" && verhaalKeuze !== "ai") ||
@@ -2277,9 +2445,15 @@ ${paragrafen}
                         >
                           {bewerkIndex === i
                             ? "Jouw aangepaste versie"
-                            : `Voorstel · ${telWoorden(
-                                verhaalGeparseerd.verhaal,
-                              )} woorden`}
+                            : verschil
+                              ? `Voorstel · ${wijzigingen.length} ${
+                                  wijzigingen.length === 1
+                                    ? "wijziging"
+                                    : "wijzigingen"
+                                }, ${overgenomen} overgenomen`
+                              : `Voorstel · ${telWoorden(
+                                  verhaalGeparseerd.verhaal,
+                                )} woorden`}
                         </div>
                         {bewerkIndex === i ? (
                           <textarea
@@ -2301,6 +2475,124 @@ ${paragrafen}
                               outline: "none",
                             }}
                           />
+                        ) : verschil ? (
+                          <div
+                            style={{
+                              maxHeight: 280,
+                              overflowY: "auto",
+                              padding: "8px 10px",
+                              borderRadius: 5,
+                              border: `1px solid ${BIB.line}`,
+                              background: BIB.wit,
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 6,
+                              fontFamily: BIB.tekst,
+                            }}
+                          >
+                            {verschil.map((blok, k) => {
+                              if (blok.soort === "gelijk") {
+                                return (
+                                  <div
+                                    key={k}
+                                    style={{
+                                      fontSize: 11.5,
+                                      color: BIB.antracietSoft,
+                                      lineHeight: 1.5,
+                                      padding: "0 8px",
+                                    }}
+                                  >
+                                    {blok.nieuw.length > 90
+                                      ? `${blok.nieuw.slice(0, 90)}…`
+                                      : blok.nieuw}
+                                  </div>
+                                );
+                              }
+                              const aan = !afgewezen.has(k);
+                              const kleur =
+                                blok.soort === "verwijderd"
+                                  ? BIB.vaag
+                                  : BIB.levendig;
+                              const etiket =
+                                blok.soort === "toegevoegd"
+                                  ? "nieuw"
+                                  : blok.soort === "gewijzigd"
+                                    ? "herschreven"
+                                    : "weggehaald";
+                              return (
+                                <label
+                                  key={k}
+                                  style={{
+                                    display: "flex",
+                                    gap: 8,
+                                    alignItems: "flex-start",
+                                    cursor: "pointer",
+                                    padding: "6px 8px",
+                                    borderRadius: 4,
+                                    background: aan
+                                      ? `${kleur}14`
+                                      : BIB.koelSoft,
+                                    borderLeft: `3px solid ${
+                                      aan ? kleur : BIB.line
+                                    }`,
+                                  }}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={aan}
+                                    onChange={() => wisselBlok(i, k)}
+                                    style={{ marginTop: 4, flexShrink: 0 }}
+                                  />
+                                  <span
+                                    style={{
+                                      flex: 1,
+                                      fontSize: 12.5,
+                                      lineHeight: 1.6,
+                                    }}
+                                  >
+                                    <span
+                                      style={{
+                                        display: "block",
+                                        fontSize: 10,
+                                        textTransform: "uppercase",
+                                        letterSpacing: 0.3,
+                                        fontWeight: 700,
+                                        color: kleur,
+                                        marginBottom: 3,
+                                      }}
+                                    >
+                                      {etiket}
+                                    </span>
+                                    {blok.soort === "gewijzigd" && (
+                                      <span
+                                        style={{
+                                          display: "block",
+                                          color: BIB.antracietSoft,
+                                          textDecoration: "line-through",
+                                          marginBottom: 3,
+                                        }}
+                                      >
+                                        {blok.oud}
+                                      </span>
+                                    )}
+                                    <span
+                                      style={{
+                                        color: BIB.antraciet,
+                                        textDecoration:
+                                          blok.soort === "verwijderd"
+                                            ? "line-through"
+                                            : "none",
+                                      }}
+                                    >
+                                      {blok.soort === "verwijderd"
+                                        ? blok.oud
+                                        : blok.nieuw}
+                                    </span>
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
                         ) : (
                           <div
                             style={{
@@ -2333,7 +2625,7 @@ ${paragrafen}
                                 i,
                                 bewerkIndex === i
                                   ? bewerkTekst
-                                  : verhaalGeparseerd.verhaal!,
+                                  : resultaatTekst,
                               );
                               setBewerkIndex(null);
                             }}
@@ -2385,9 +2677,7 @@ ${paragrafen}
                             </button>
                           ) : (
                             <button
-                              onClick={() =>
-                                startBewerken(i, verhaalGeparseerd.verhaal!)
-                              }
+                              onClick={() => startBewerken(i, resultaatTekst)}
                               style={{
                                 padding: "5px 10px",
                                 borderRadius: 4,
