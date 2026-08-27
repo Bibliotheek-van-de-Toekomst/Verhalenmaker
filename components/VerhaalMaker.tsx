@@ -617,11 +617,25 @@ export function VerhaalMaker({
     number | null
   >(null);
 
+  // De tekst zoals die was vlak voor het plaatsen van een AI-versie. Zolang
+  // deze bewaard is kan de leerling terug. Zodra zij zelf verder typt vervalt
+  // hij, anders zou terugdraaien haar eigen aanpassingen weggooien.
+  const [terugdraaiTekst, setTerugdraaiTekst] = React.useState<string | null>(
+    null,
+  );
+
   const plaatsAiVersie = (index: number, verhaal: string) => {
+    setTerugdraaiTekst(verhaalTekst);
     setVerhaalTekst(verhaal);
     setPlaatsBevestigdIndex(index);
     setTimeout(() => setPlaatsBevestigdIndex(null), 1800);
     if (isMobile) setMobielTab("werkvlak");
+  };
+
+  const draaiPlaatsingTerug = () => {
+    if (terugdraaiTekst === null) return;
+    setVerhaalTekst(terugdraaiTekst);
+    setTerugdraaiTekst(null);
   };
 
   const [selectie, setSelectie] = React.useState("");
@@ -2969,6 +2983,59 @@ ${paragrafen}
                     </button>
                   </div>
                 )}
+                {terugdraaiTekst !== null && (
+                  <div
+                    style={{
+                      padding: "9px 14px",
+                      background: BIB.beigeSoft,
+                      border: `1px solid ${BIB.line}`,
+                      borderRadius: 6,
+                      color: BIB.antraciet,
+                      fontSize: 12.5,
+                      lineHeight: 1.5,
+                      display: "flex",
+                      gap: 10,
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <span style={{ flex: 1, minWidth: 160 }}>
+                      De AI-versie staat nu in je verhaal.
+                    </span>
+                    <button
+                      onClick={draaiPlaatsingTerug}
+                      style={{
+                        padding: "5px 11px",
+                        borderRadius: 4,
+                        border: `1px solid ${BIB.antraciet}`,
+                        background: BIB.wit,
+                        color: BIB.antraciet,
+                        fontSize: 11.5,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        fontFamily: BIB.tekst,
+                      }}
+                    >
+                      ↩ Toch mijn vorige versie
+                    </button>
+                    <button
+                      onClick={() => setTerugdraaiTekst(null)}
+                      aria-label="Sluiten"
+                      style={{
+                        border: "none",
+                        background: "transparent",
+                        color: BIB.antracietSoft,
+                        fontSize: 14,
+                        cursor: "pointer",
+                        fontFamily: BIB.tekst,
+                        padding: 0,
+                        lineHeight: 1,
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
                 {verhaalKeuze === null && !genereerBezig ? (
                   <div
                     style={{
@@ -3206,6 +3273,7 @@ ${paragrafen}
                     value={verhaalTekst}
                     onChange={(e) => {
                       setVerhaalTekst(e.target.value);
+                      setTerugdraaiTekst(null);
                       if (verhaalKeuze === null) setVerhaalKeuze("zelf");
                     }}
                     readOnly={genereerBezig}
