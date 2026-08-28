@@ -32,7 +32,9 @@ type Body = {
   modelId?: string;
 };
 
-const MAX_TOKENS = 700;
+// Ruim boven wat de prompt vraagt (300 tot 400 woorden). Een hogere grens kost
+// niets extra: er wordt alleen afgerekend op wat het model werkelijk schrijft.
+const MAX_TOKENS = 1200;
 
 async function loadPrompt(vars: Record<string, string>) {
   const raw = await fs.readFile(

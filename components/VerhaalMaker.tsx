@@ -12,6 +12,7 @@
 import React from "react";
 import { BIB } from "@/lib/tokens";
 import { BIB_STAPPEN, BOUWSTEEN_ICON, WAAROM } from "@/lib/stappen";
+import { MAX_LENGTHS, TEKENS_PER_WOORD } from "@/lib/invoer";
 import { BibLogo } from "./BibLogo";
 import { PijlerRij } from "./PijlerRij";
 import { BibIcon, type IconName } from "./BibIcon";
@@ -921,6 +922,31 @@ export function VerhaalMaker({
         : "Blijf je bouwstenen aanscherpen en schrijf door — er wachten nog medailles op je.";
 
   const woordenTelling = telWoorden(verhaalTekst);
+
+  // Boven deze grens ziet de AI alleen het eerste deel van het verhaal, en nog
+  // wat later weigert hij het verzoek. Dat merk je zonder waarschuwing pas als
+  // de coach over een half verhaal begint, of als je een voorstel plaatst dat
+  // jouw slot heeft weggelaten.
+  // Afgerond op tientallen: het is een richtgetal, geen exacte grens.
+  const maxVerhaalWoorden =
+    Math.round(MAX_LENGTHS.verhaalTekst / TEKENS_PER_WOORD / 10) * 10;
+  const lengteWaarschuwing: { tekst: string; ernstig: boolean } | null =
+    verhaalTekst.length > MAX_LENGTHS.verhaalTekst + 500
+      ? {
+          ernstig: true,
+          tekst: `Je verhaal is te lang voor de coach. Kort het in tot ongeveer ${maxVerhaalWoorden} woorden, anders kun je geen feedback meer vragen.`,
+        }
+      : verhaalTekst.length > MAX_LENGTHS.verhaalTekst
+        ? {
+            ernstig: true,
+            tekst: `De AI leest nu alleen de eerste ${maxVerhaalWoorden} woorden van je verhaal. Vraag je om een nieuwe versie, dan raak je je slot kwijt.`,
+          }
+        : verhaalTekst.length > MAX_LENGTHS.verhaalTekst * 0.85
+          ? {
+              ernstig: false,
+              tekst: `Je nadert de grens: boven ongeveer ${maxVerhaalWoorden} woorden leest de AI niet meer alles mee.`,
+            }
+          : null;
   const auteurNaam = leerling.naam;
 
   const htmlEscape = (s: string) =>
@@ -3761,6 +3787,7 @@ ${paragrafen}
                   padding: "8px 20px",
                   display: "flex",
                   alignItems: "center",
+                  flexWrap: "wrap",
                   gap: 10,
                   fontSize: 11.5,
                   color: BIB.antracietSoft,
@@ -3773,6 +3800,24 @@ ${paragrafen}
                 </span>
                 <span>·</span>
                 <span>Doel: 300–600 woorden</span>
+                {lengteWaarschuwing && (
+                  <span
+                    role={lengteWaarschuwing.ernstig ? "alert" : undefined}
+                    style={{
+                      color: lengteWaarschuwing.ernstig
+                        ? BIB.vaag
+                        : BIB.antracietSoft,
+                      fontWeight: lengteWaarschuwing.ernstig ? 700 : 400,
+                      flexBasis: "100%",
+                      order: 9,
+                      lineHeight: 1.45,
+                      paddingTop: 2,
+                    }}
+                  >
+                    {lengteWaarschuwing.ernstig ? "⚠ " : ""}
+                    {lengteWaarschuwing.tekst}
+                  </span>
+                )}
                 <button
                   onClick={() => downloadBackup("handmatig")}
                   title="Download een tekstbestand met al je bouwstenen en je verhaal"

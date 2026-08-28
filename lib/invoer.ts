@@ -7,14 +7,23 @@
 // License, or (at your option) any later version. See LICENSE.
 
 
+// Een verhaal beslaat maximaal 1 A4. Bij een gebruikelijke schoolopmaak is dat
+// zo'n 600 woorden, en gemeten aan de uitvoer van deze app komt een woord op
+// ongeveer 5,7 tekens inclusief spatie. Dat is grofweg 3400 tekens; met marge
+// voor doorschrijven staat de grens op 4000. Boven deze grens leest de AI niet
+// alles mee, boven 4500 (deze waarde plus 500) weigert hij het verzoek.
 export const MAX_LENGTHS = {
   vraag: 1000,
   selectie: 500,
   bouwsteen: 500,
-  verhaalTekst: 2500,
+  verhaalTekst: 4000,
   tone: 100,
   berichtTekst: 2000,
 } as const;
+
+// Hoeveel tekens een woord gemiddeld beslaat, gemeten aan echte uitvoer.
+// Gebruikt om de tekengrens in woorden uit te drukken voor de leerling.
+export const TEKENS_PER_WOORD = 5.7;
 
 export function clean(
   s: string | undefined | null,

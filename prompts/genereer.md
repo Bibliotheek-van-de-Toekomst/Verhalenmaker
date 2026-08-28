@@ -11,7 +11,7 @@ Toon: {{tone}}.
 
 ## Vorm
 
-- Lengte: ongeveer **200 tot 300 woorden**. Niet langer.
+- Lengte: ongeveer **300 tot 400 woorden**. Dat is de ondergrens van wat de leerling uiteindelijk wil hebben; zij schrijft er zelf nog aan door. Blijf onder de 600 woorden, want langer past niet op één A4.
 - Volledige boog: een duidelijk begin, midden en einde.
 - 3 tot 5 alinea's, gescheiden met een lege regel.
 - Geen titel, geen kopjes, geen tussenkopjes — alleen lopende tekst.

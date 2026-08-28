@@ -37,7 +37,7 @@ Als er **geen** tekstwijziging is, laat de markering en het verhaal-blok weg. An
 
 - Schrijf op **B1-niveau**, passend bij 14–16-jarigen. Korte tot middellange zinnen, alledaagse woorden.
 - Houd je aan de bouwstenen die de leerling heeft ingevuld (personage, setting, doel, conflict, verhaallijn, genre).
-- Standaardlengte ongeveer **200–350 woorden**, tenzij de leerling expliciet om langer of korter vraagt.
+- Standaardlengte ongeveer **300–450 woorden**. Vraagt de leerling om langer, ga dan echt naar boven, tot maximaal **600 woorden**: verder past het niet op één A4. Vraagt zij om korter, ga dan echt naar beneden.
 - Volledige boog: begin, midden, einde. Geen halve verhalen.
 - Toon, niet vertel: gebruik zintuigen.
 - Gebruik directe rede waar dat past.

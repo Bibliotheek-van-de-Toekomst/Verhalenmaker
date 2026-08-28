@@ -17,6 +17,7 @@ import { vindModel, standaardModel, type ModelConfig } from "@/lib/providers";
 import { BIB_STAPPEN } from "@/lib/stappen";
 import {
   MAX_LENGTHS,
+  TEKENS_PER_WOORD,
   clean,
   escapeQuotes,
   tooLong,
@@ -260,7 +261,9 @@ export async function POST(req: NextRequest) {
   } = body;
 
   const modus: Modus = modusRuw === "schrijver" ? "schrijver" : "coach";
-  const maxTokens = fase === 2 && modus === "schrijver" ? 900 : 500;
+  // De schrijver moet een verhaal van 1 A4 in zijn geheel kunnen teruggeven,
+  // anders kapt hij halverwege een zin af.
+  const maxTokens = fase === 2 && modus === "schrijver" ? 1600 : 500;
 
   if (![1, 2].includes(fase) || !vraag?.trim()) {
     return new Response("Ongeldig verzoek.", { status: 400 });
@@ -272,7 +275,13 @@ export async function POST(req: NextRequest) {
     tooLong(verhaalTekst, MAX_LENGTHS.verhaalTekst + 500) ||
     tooLong(tone, MAX_LENGTHS.tone)
   ) {
-    return new Response("Invoer te lang.", { status: 400 });
+    const maxWoorden = Math.round(
+      (MAX_LENGTHS.verhaalTekst + 500) / TEKENS_PER_WOORD,
+    );
+    return new Response(
+      `Je verhaal is te lang geworden om feedback op te vragen. Kort het in tot ongeveer ${maxWoorden} woorden en probeer het opnieuw.`,
+      { status: 400 },
+    );
   }
   if (
     bouwstenen &&
