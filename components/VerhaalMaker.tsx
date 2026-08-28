@@ -566,13 +566,21 @@ export function VerhaalMaker({
     lastMsg?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [berichten.length]);
 
-  const verstuur = async (extraContext?: string, retryVraag?: string) => {
-    const vraag = retryVraag || input;
+  // vasteVraag is een vraag die niet uit het invoerveld komt, bijvoorbeeld een
+  // knop uit de selectiebalk. alsHerhaling is alleen waar bij "opnieuw
+  // proberen": dan staat het bericht van de leerling al in het gesprek en moet
+  // het er niet nog een keer bij.
+  const verstuur = async (
+    extraContext?: string,
+    vasteVraag?: string,
+    alsHerhaling = false,
+  ) => {
+    const vraag = vasteVraag || input;
     if (!vraag.trim() || bezig) return;
     if (isMobile && mobielTab !== "coach") {
       setMobielTab("coach");
     }
-    if (!retryVraag) {
+    if (!alsHerhaling) {
       setBerichten((b) => [
         ...b,
         {
@@ -2771,7 +2779,13 @@ ${paragrafen}
                       <button
                         onClick={() => {
                           setBerichten((bs) => bs.filter((x) => !x.isError));
-                          verstuur(laatsteVraag.extraContext, laatsteVraag.vraag);
+                          // Het bericht van de leerling staat er al; alleen de
+                          // mislukte poging wordt overgedaan.
+                          verstuur(
+                            laatsteVraag.extraContext,
+                            laatsteVraag.vraag,
+                            true,
+                          );
                         }}
                         style={{
                           marginTop: 8,
