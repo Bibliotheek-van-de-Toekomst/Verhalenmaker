@@ -137,8 +137,12 @@ function splitsAlineas(t: string): string[] {
     .filter(Boolean);
 }
 
-// Hoeveel woorden hebben twee alinea's gemeen? Bepaalt of een alinea is
-// herschreven of dat het een compleet nieuwe alinea is.
+// Hoort een nieuwe alinea bij een weggevallen alinea? We meten hoeveel van de
+// kortste van de twee terugkomt in de andere. Bewust niet het aandeel gedeelde
+// woorden in het geheel: wordt een alinea uitgebreid, dan verwatert die maat
+// door alle nieuwe woorden terwijl de oude alinea er nog volledig in staat.
+// Zo'n uitbreiding hoort als herschrijving te tellen, niet als een nieuwe
+// alinea naast een verwijderde.
 function gelijkenis(x: string, y: string): number {
   const woorden = (t: string) =>
     new Set(
@@ -149,15 +153,18 @@ function gelijkenis(x: string, y: string): number {
     );
   const a = woorden(x);
   const b = woorden(y);
-  if (a.size === 0 || b.size === 0) return 0;
+  const kleinste = Math.min(a.size, b.size);
+  if (kleinste === 0) return 0;
   let samen = 0;
   a.forEach((w) => {
     if (b.has(w)) samen++;
   });
-  return samen / (a.size + b.size - samen);
+  // Bij korte alinea's kunnen een paar toevallige woorden al hoog scoren.
+  if (samen < Math.min(3, kleinste)) return 0;
+  return samen / kleinste;
 }
 
-const GELIJKENIS_DREMPEL = 0.3;
+const GELIJKENIS_DREMPEL = 0.5;
 
 // Koppel elke nieuwe alinea aan de weggevallen alinea die er het meest op
 // lijkt. Blijft er niets over om aan te koppelen, dan is het echt nieuw of
