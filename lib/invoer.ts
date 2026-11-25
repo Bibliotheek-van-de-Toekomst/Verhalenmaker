@@ -48,19 +48,37 @@ export function tooLong(
   return typeof s === "string" && s.length > maxLen;
 }
 
+// Adressen op vercel.app die bij dit project horen: het vaste adres en de
+// proefversies die Vercel per commit of branch aanmaakt. Vercel vult deze
+// variabelen zelf in. Elke andere site op vercel.app is van iemand anders.
+function eigenVercelHosts(): string[] {
+  return [
+    "verhalenmaker.vercel.app",
+    process.env.VERCEL_URL,
+    process.env.VERCEL_BRANCH_URL,
+    process.env.VERCEL_PROJECT_PRODUCTION_URL,
+  ]
+    .filter((h): h is string => !!h)
+    .map((h) => h.toLowerCase());
+}
+
+// Alle AI-routes zijn POST-verzoeken, en een browser stuurt daarbij altijd een
+// Origin-header mee. Een verzoek zonder Origin komt dus niet uit de app.
+// Let op: een script kan de header vervalsen. Deze controle houdt andere
+// websites tegen; de limiet op verzoeken blijft de rem op misbruik.
 export function isAllowedOrigin(origin: string | null): boolean {
-  if (!origin) return true;
+  if (!origin) return false;
   try {
     const url = new URL(origin);
     const host = url.host.toLowerCase();
+    if (process.env.NODE_ENV !== "production") {
+      if (host === "localhost:3000" || host === "127.0.0.1:3000") return true;
+    }
+    if (url.protocol !== "https:") return false;
     return (
-      host.endsWith(".vercel.app") ||
-      host.endsWith(".brainportbibliotheken.nl") ||
       host === "brainportbibliotheken.nl" ||
-      host === "localhost:3000" ||
-      host === "localhost" ||
-      host === "127.0.0.1:3000" ||
-      host === "127.0.0.1"
+      host.endsWith(".brainportbibliotheken.nl") ||
+      eigenVercelHosts().includes(host)
     );
   } catch {
     return false;
