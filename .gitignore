@@ -13,3 +13,6 @@ next-env.d.ts
 Auteursrechtoverdracht*
 *-CONCEPT.*
 *-INTERN.*
+
+# Bouwbestand van TypeScript, wordt telkens opnieuw gemaakt
+tsconfig.tsbuildinfo
