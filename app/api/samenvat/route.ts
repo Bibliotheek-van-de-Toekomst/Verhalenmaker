@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   vindModel,
   standaardModel,
+  anthropicOpties,
   type ModelConfig,
 } from "@/lib/providers";
 import {
@@ -67,18 +68,18 @@ async function callModel(
       const c = new Anthropic({ apiKey: process.env[model.envKey]! });
       const resp = await c.messages.create({
         model: model.modelId,
-        max_tokens: 400,
+        ...anthropicOpties(400),
         system,
         messages: [{ role: "user", content: user }],
       });
-      const block = resp.content[0];
+      const block = resp.content.find((b) => b.type === "text");
       return block && block.type === "text" ? block.text : "";
     }
     case "openai": {
       const c = new OpenAI({ apiKey: process.env[model.envKey]! });
       const resp = await c.chat.completions.create({
         model: model.modelId,
-        max_tokens: 400,
+        max_completion_tokens: 400,
         messages: [
           { role: "system", content: system },
           { role: "user", content: user },

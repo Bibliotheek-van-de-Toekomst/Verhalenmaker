@@ -16,6 +16,7 @@ import path from "node:path";
 import {
   vindModel,
   standaardModel,
+  anthropicOpties,
   type ModelConfig,
 } from "@/lib/providers";
 import { BIB_STAPPEN, WAAROM } from "@/lib/stappen";
@@ -67,18 +68,18 @@ async function callModel(
       const c = new Anthropic({ apiKey: process.env[model.envKey]! });
       const resp = await c.messages.create({
         model: model.modelId,
-        max_tokens: MAX_TOKENS,
+        ...anthropicOpties(MAX_TOKENS),
         system,
         messages: [{ role: "user", content: user }],
       });
-      const block = resp.content[0];
+      const block = resp.content.find((b) => b.type === "text");
       return block && block.type === "text" ? block.text : "";
     }
     case "openai": {
       const c = new OpenAI({ apiKey: process.env[model.envKey]! });
       const resp = await c.chat.completions.create({
         model: model.modelId,
-        max_tokens: MAX_TOKENS,
+        max_completion_tokens: MAX_TOKENS,
         messages: [
           { role: "system", content: system },
           { role: "user", content: user },

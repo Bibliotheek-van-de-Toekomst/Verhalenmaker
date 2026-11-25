@@ -19,49 +19,65 @@ export type ModelConfig = {
 };
 
 // Alleen goedkope, niet-reasoning modellen — geschikt voor een schoolworkshop.
-// Geen Sonnet/Opus, geen GPT-5, geen Gemini Pro, geen Mistral Large.
+// Per aanbieder het goedkoopste model dat de coachregels goed volgt.
 // Eerste item is de default als STANDAARD_MODEL env var niet is gezet.
 export const ALLE_MODELLEN: ModelConfig[] = [
-  {
-    id: "mistral-small",
-    label: "Mistral Small",
-    provider: "mistral",
-    modelId: "mistral-small-latest",
-    envKey: "MISTRAL_API_KEY",
-    beschrijving: "Europees, goedkoop. Aanbevolen standaard voor de workshop.",
-  },
   {
     id: "ministral-8b",
     label: "Ministral 8B",
     provider: "mistral",
     modelId: "ministral-8b-latest",
     envKey: "MISTRAL_API_KEY",
-    beschrijving: "Nog goedkoper alternatief van Mistral.",
+    beschrijving: "Europees en goedkoop. Aanbevolen standaard voor de workshop.",
   },
   {
-    id: "claude-haiku-4-5",
-    label: "Claude Haiku 4.5",
+    id: "claude-haiku-5-5",
+    label: "Claude Haiku 5.5",
     provider: "anthropic",
-    modelId: "claude-haiku-4-5",
+    modelId: "claude-haiku-5-5",
     envKey: "ANTHROPIC_API_KEY",
-    beschrijving: "Snel en sterk in Nederlands; iets duurder dan Mistral.",
+    beschrijving: "Snel en sterk in Nederlands.",
   },
   {
-    id: "gpt-4-1-mini",
-    label: "GPT-4.1 mini",
+    id: "gpt-6-luna",
+    label: "GPT-6 Luna",
     provider: "openai",
-    modelId: "gpt-4.1-mini",
+    modelId: "gpt-6-luna",
     envKey: "OPENAI_API_KEY",
-    beschrijving: "OpenAI's goedkope mini-model. Goede Nederlandse output.",
+    beschrijving: "Het goedkope model van OpenAI. Goede Nederlandse output.",
   },
 ];
+
+// Claude Haiku 5.5 denkt standaard eerst na, en dat nadenken telt mee in
+// max_tokens. Bij de korte antwoorden van deze app zou het antwoord dan
+// wegvallen, dus staat het uit. Daarnaast telt dit model dezelfde tekst als
+// ongeveer 30% meer tokens dan Haiku 4.5; de grens schuift daarom mee.
+export function anthropicOpties(maxTokens: number) {
+  return {
+    max_tokens: Math.ceil(maxTokens * 1.3),
+    thinking: { type: "disabled" as const },
+  };
+}
+
+// Model-ids van voor de wissel van november 2026. Ze kunnen nog in de
+// env-variabelen op Vercel staan; zonder deze vertaling zou een oude lijst
+// alle nieuwe modellen verbergen.
+const OUDE_IDS: Record<string, string> = {
+  "mistral-small": "ministral-8b",
+  "claude-haiku-4-5": "claude-haiku-5-5",
+  "gpt-4-1-mini": "gpt-6-luna",
+};
+
+function huidigId(id: string): string {
+  return OUDE_IDS[id] ?? id;
+}
 
 function toegestaneLijst(): string[] | null {
   const raw = process.env.LMC_TOEGESTANE_MODELLEN;
   if (!raw) return null;
   const lijst = raw
     .split(",")
-    .map((s) => s.trim())
+    .map((s) => huidigId(s.trim()))
     .filter(Boolean);
   return lijst.length ? lijst : null;
 }
@@ -80,12 +96,12 @@ export function standaardModel(): ModelConfig | null {
   if (lijst.length === 0) return null;
   const gekozen = process.env.STANDAARD_MODEL;
   if (gekozen) {
-    const match = lijst.find((m) => m.id === gekozen);
+    const match = lijst.find((m) => m.id === huidigId(gekozen));
     if (match) return match;
   }
   return lijst[0];
 }
 
 export function vindModel(id: string): ModelConfig | null {
-  return beschikbareModellen().find((m) => m.id === id) ?? null;
+  return beschikbareModellen().find((m) => m.id === huidigId(id)) ?? null;
 }

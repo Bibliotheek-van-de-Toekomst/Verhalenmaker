@@ -32,8 +32,8 @@ Specifiek welkom is feedback op:
 
 - Next.js 14 (App Router) + React 18 + TypeScript
 - Tailwind CSS (huisstijl-tokens in `tailwind.config.ts`)
-- Multi-LLM via `lib/providers.ts` — Claude Haiku 4.5, GPT-4.1 mini,
-  Mistral Small, Ministral 8B (alleen goedkope modellen)
+- Multi-LLM via `lib/providers.ts` — Ministral 8B, Claude Haiku 5.5,
+  GPT-6 Luna (per aanbieder het goedkoopste geschikte model)
 - LocalStorage voor state + auto-save
 - Streaming responses (Server-Sent Events via `ReadableStream`)
 - Upstash Redis voor rate-limiting (IP + sessie)
@@ -55,9 +55,9 @@ Minstens één van deze API keys is verplicht:
 
 | Variabele            | Waarvoor                              |
 | -------------------- | ------------------------------------- |
-| `ANTHROPIC_API_KEY`  | Claude Haiku 4.5                      |
-| `OPENAI_API_KEY`     | GPT-4.1 mini                          |
-| `MISTRAL_API_KEY`    | Mistral Small / Ministral 8B          |
+| `ANTHROPIC_API_KEY`  | Claude Haiku 5.5                      |
+| `OPENAI_API_KEY`     | GPT-6 Luna                            |
+| `MISTRAL_API_KEY`    | Ministral 8B                          |
 
 Optioneel:
 
@@ -68,7 +68,7 @@ Optioneel:
 | `UPSTASH_REDIS_REST_URL`     | Inschakelen van rate-limiting (samen met token).                                |
 | `UPSTASH_REDIS_REST_TOKEN`   | Idem.                                                                           |
 
-Model-ids: `claude-haiku-4-5`, `gpt-4-1-mini`, `mistral-small`, `ministral-8b`.
+Model-ids: `ministral-8b`, `claude-haiku-5-5`, `gpt-6-luna`.
 
 > **Let op**: zet comments in `.env.local` op een eigen regel (`# kommentaar`
 > boven de waarde), niet achter dezelfde regel als de waarde. De Next-dotenv-

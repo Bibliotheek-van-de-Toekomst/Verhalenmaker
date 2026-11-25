@@ -13,7 +13,12 @@ import { Mistral } from "@mistralai/mistralai";
 import { NextRequest } from "next/server";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { vindModel, standaardModel, type ModelConfig } from "@/lib/providers";
+import {
+  vindModel,
+  standaardModel,
+  anthropicOpties,
+  type ModelConfig,
+} from "@/lib/providers";
 import { BIB_STAPPEN } from "@/lib/stappen";
 import {
   MAX_LENGTHS,
@@ -113,7 +118,7 @@ async function streamAnthropic(
   const anthropic = new Anthropic({ apiKey: process.env[model.envKey]! });
   const stream = anthropic.messages.stream({
     model: model.modelId,
-    max_tokens: maxTokens,
+    ...anthropicOpties(maxTokens),
     system,
     messages: [...beurten, { role: "user", content: user }],
   });
@@ -147,7 +152,7 @@ async function streamOpenAI(
   const openai = new OpenAI({ apiKey: process.env[model.envKey]! });
   const stream = await openai.chat.completions.create({
     model: model.modelId,
-    max_tokens: maxTokens,
+    max_completion_tokens: maxTokens,
     stream: true,
     messages: [
       { role: "system", content: system },
@@ -364,7 +369,7 @@ export async function POST(req: NextRequest) {
       lower.includes("rate") ||
       lower.includes("quota");
     const tekst = isCapaciteit
-      ? `${model.label} heeft op dit moment geen capaciteit. Wissel rechtsboven via "AI: ${model.label} ▾" naar een ander model (bv. Claude Haiku of GPT-4.1 mini) en probeer opnieuw.`
+      ? `${model.label} heeft op dit moment geen capaciteit. Wissel rechtsboven via "AI: ${model.label} ▾" naar een ander model en probeer opnieuw.`
       : `Coach (${model.label}) is even niet bereikbaar. Probeer het zo opnieuw, of kies rechtsboven een ander model.`;
     return new Response(tekst, { status: 503 });
   }
