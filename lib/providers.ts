@@ -28,7 +28,7 @@ export const ALLE_MODELLEN: ModelConfig[] = [
     provider: "mistral",
     modelId: "ministral-8b-latest",
     envKey: "MISTRAL_API_KEY",
-    beschrijving: "Europees en goedkoop. Aanbevolen standaard voor de workshop.",
+    beschrijving: "Europees en goedkoop. Kort en compact.",
   },
   {
     id: "claude-haiku-5-5",
@@ -101,10 +101,16 @@ export function beschikbareModellen(): ModelConfig[] {
   });
 }
 
+// Tijdelijk (25-11-2026): de sleutel van Mistral loopt tegen een limiet aan,
+// waardoor Ministral 8B geregeld een fout geeft. Tot dat is opgelost gaat deze
+// waarde voor op de env-variabele STANDAARD_MODEL. Zet hem daarna terug op
+// null; dan geldt weer STANDAARD_MODEL of het eerste model in de lijst.
+const TIJDELIJKE_STANDAARD: string | null = "claude-haiku-5-5";
+
 export function standaardModel(): ModelConfig | null {
   const lijst = beschikbareModellen();
   if (lijst.length === 0) return null;
-  const gekozen = process.env.STANDAARD_MODEL;
+  const gekozen = TIJDELIJKE_STANDAARD ?? process.env.STANDAARD_MODEL;
   if (gekozen) {
     const match = lijst.find((m) => m.id === huidigId(gekozen));
     if (match) return match;
