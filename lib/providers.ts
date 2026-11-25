@@ -59,6 +59,16 @@ export function anthropicOpties(maxTokens: number) {
   };
 }
 
+// GPT-6 Luna denkt standaard eerst na, en dat denken telt mee in
+// max_completion_tokens. Bij een krappe grens bleef er soms niets over voor
+// het antwoord zelf. Voor deze korte taken is nadenken niet nodig.
+export function openaiOpties(maxTokens: number) {
+  return {
+    max_completion_tokens: maxTokens,
+    reasoning_effort: "none" as const,
+  };
+}
+
 // Model-ids van voor de wissel van november 2026. Ze kunnen nog in de
 // env-variabelen op Vercel staan; zonder deze vertaling zou een oude lijst
 // alle nieuwe modellen verbergen.

@@ -17,6 +17,7 @@ import {
   vindModel,
   standaardModel,
   anthropicOpties,
+  openaiOpties,
   type ModelConfig,
 } from "@/lib/providers";
 import { BIB_STAPPEN } from "@/lib/stappen";
@@ -152,7 +153,7 @@ async function streamOpenAI(
   const openai = new OpenAI({ apiKey: process.env[model.envKey]! });
   const stream = await openai.chat.completions.create({
     model: model.modelId,
-    max_completion_tokens: maxTokens,
+    ...openaiOpties(maxTokens),
     stream: true,
     messages: [
       { role: "system", content: system },

@@ -17,6 +17,7 @@ import {
   vindModel,
   standaardModel,
   anthropicOpties,
+  openaiOpties,
   type ModelConfig,
 } from "@/lib/providers";
 import { BIB_STAPPEN, WAAROM } from "@/lib/stappen";
@@ -79,7 +80,7 @@ async function callModel(
       const c = new OpenAI({ apiKey: process.env[model.envKey]! });
       const resp = await c.chat.completions.create({
         model: model.modelId,
-        max_completion_tokens: MAX_TOKENS,
+        ...openaiOpties(MAX_TOKENS),
         messages: [
           { role: "system", content: system },
           { role: "user", content: user },

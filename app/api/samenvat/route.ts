@@ -15,6 +15,7 @@ import {
   vindModel,
   standaardModel,
   anthropicOpties,
+  openaiOpties,
   type ModelConfig,
 } from "@/lib/providers";
 import {
@@ -79,7 +80,7 @@ async function callModel(
       const c = new OpenAI({ apiKey: process.env[model.envKey]! });
       const resp = await c.chat.completions.create({
         model: model.modelId,
-        max_completion_tokens: 400,
+        ...openaiOpties(400),
         messages: [
           { role: "system", content: system },
           { role: "user", content: user },
